@@ -1,0 +1,30 @@
+plugins {
+	id "java"
+}
+
+group "org.game"
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation "com.google.code.gson:gson:+"
+	implementation "org.eclipse.jetty:jetty-http:9.+"
+	implementation "org.eclipse.jetty:jetty-io:9.+"
+	implementation "org.eclipse.jetty:jetty-security:9.+"
+	implementation "org.eclipse.jetty:jetty-server:9.+"
+	implementation "org.eclipse.jetty:jetty-servlet:9.+"
+	implementation "org.eclipse.jetty:jetty-util:9.+"
+	implementation "org.eclipse.jetty:jetty-util-ajax:9.+"
+}
+
+jar {
+	manifest {
+		attributes("Main-Class": "org.game.Main")
+	}
+}
+
+tasks.withType(JavaCompile) {
+	options.release = 8;
+}
