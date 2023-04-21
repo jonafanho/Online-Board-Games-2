@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>The Round Table</title>
+	<link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poltawski+Nowy">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter">
+	<script src="socket.io.js"></script>
+	<script type="module" src="index.js"></script>
+</head>
+<body>
+<div id="section-home" class="section" hidden>
+	<h1>The Round Table</h1>
+	<p>Are you ready?</p>
+	<br/>
+	<input id="button-create-room" class="input-button" type="button" value="Create Room"/>
+	<br/>
+	<br/>
+	<label for="text-box-room-code"></label>
+	<input id="text-box-room-code" class="input-text" type="text" autocomplete="false" placeholder="Room Code"/>
+	<br/>
+	<input id="button-join-room" class="input-button" type="button" value="Join Room" disabled/>
+	<p id="text-error"></p>
+</div>
+<div id="section-lobby" class="section" hidden>
+	<label for="text-box-name"></label>
+	<input id="text-box-name" class="input-text" type="text" autocomplete="false" placeholder="Name"/>
+</div>
+<div id="section-game" class="section" hidden>
+
+</div>
+</body>
+</html>

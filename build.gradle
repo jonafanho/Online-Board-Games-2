@@ -1,5 +1,6 @@
 plugins {
 	id "java"
+	id "de.undercouch.download" version "4.1.2"
 }
 
 group "org.game"
@@ -10,18 +11,22 @@ repositories {
 
 dependencies {
 	implementation "com.google.code.gson:gson:+"
-	implementation "org.eclipse.jetty:jetty-http:9.+"
-	implementation "org.eclipse.jetty:jetty-io:9.+"
-	implementation "org.eclipse.jetty:jetty-security:9.+"
-	implementation "org.eclipse.jetty:jetty-server:9.+"
-	implementation "org.eclipse.jetty:jetty-servlet:9.+"
-	implementation "org.eclipse.jetty:jetty-util:9.+"
-	implementation "org.eclipse.jetty:jetty-util-ajax:9.+"
+	implementation "it.unimi.dsi:fastutil:+"
+	implementation "com.corundumstudio.socketio:netty-socketio:+"
 }
 
 jar {
 	manifest {
 		attributes("Main-Class": "org.game.Main")
+	}
+}
+
+task downloadFiles {
+	download {
+		src "https://raw.githubusercontent.com/socketio/socket.io-client/2.x/dist/socket.io.slim.js"
+		dest "src/main/resources/assets/website/socket.io.js"
+		overwrite true
+		retries - 1
 	}
 }
 
