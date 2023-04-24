@@ -16,11 +16,16 @@ const UTILITIES = {
 		}
 	},
 	send: (socket, channel, content) => {
-		const parsed = Number.parseInt(UTILITIES.getCookie("id"), 16);
-		const id = (isNaN(parsed) ? Math.round(Math.random() * (2E14)) : parsed).toString(16);
+		const parsedId = Number.parseInt(UTILITIES.getCookie("id"), 16);
+		const id = (isNaN(parsedId) ? Math.round(Math.random() * (2E14)) : parsedId).toString(16);
 		UTILITIES.setCookie("id", id);
 		content["id"] = id;
-		content["name"] = UTILITIES.getCookie("name");
+
+		const rawName = UTILITIES.getCookie("name");
+		const name = rawName === "" ? "Player" : rawName;
+		UTILITIES.setCookie("name", name);
+		content["name"] = name;
+
 		socket.emit(channel, JSON.stringify(content));
 	},
 	receive: (socket, channel, callback) => socket.on(channel, data => {

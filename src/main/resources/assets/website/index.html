@@ -11,8 +11,8 @@
 	<script type="module" src="index.js"></script>
 </head>
 <body>
+<h1>The Round Table</h1>
 <div id="section-home" class="section" hidden>
-	<h1>The Round Table</h1>
 	<p>Are you ready?</p>
 	<br/>
 	<input id="button-create-room" class="input-button" type="button" value="Create Room"/>
@@ -25,8 +25,18 @@
 	<p id="text-error"></p>
 </div>
 <div id="section-lobby" class="section" hidden>
+	<h2 id="text-room-code"></h2>
+	<input id="button-start-game" class="input-button" type="button" value="Start Game"/>
+	<br/>
+	<input id="button-leave-game" class="input-button" type="button"/>
+	<br/>
+	<br/>
 	<label for="text-box-name"></label>
 	<input id="text-box-name" class="input-text" type="text" autocomplete="false" placeholder="Name"/>
+	<br/>
+	<input id="button-change-name" class="input-button" type="button" value="Change Name" disabled/>
+	<h2 id="text-players"></h2>
+	<div id="group-players"></div>
 </div>
 <div id="section-game" class="section" hidden>
 

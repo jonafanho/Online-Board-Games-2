@@ -1,6 +1,5 @@
 package org.game;
 
-import com.corundumstudio.socketio.SocketIOClient;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
@@ -10,22 +9,24 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectImmutableList;
 import org.game.data.Character;
 import org.game.logic.Game;
+import org.mtr.webserver.Webserver;
 
 import java.util.Collections;
 import java.util.Random;
-import java.util.function.BiConsumer;
 
 public class Room {
 
 	private Game game;
 
 	public final String roomCode;
-	private final BiConsumer<String, JsonObject> broadcast;
+	private final Webserver webserver;
 	private final Long2ObjectAVLTreeMap<String> users = new Long2ObjectAVLTreeMap<>();
+	private final long host;
 
-	public Room(BiConsumer<String, JsonObject> broadcast, String roomCode) {
-		this.broadcast = broadcast;
+	public Room(Webserver webserver, String roomCode, long host) {
+		this.webserver = webserver;
 		this.roomCode = roomCode;
+		this.host = host;
 	}
 
 	public void start(boolean hasLady, boolean hasTrapper, ObjectArrayList<Character> characters) {
@@ -66,27 +67,39 @@ public class Room {
 		game = new Game(hasLady, hasTrapper, users, new LongImmutableList(playerIds), new ObjectImmutableList<>(characters));
 	}
 
-	public void join(SocketIOClient client, long id, JsonObject receiveObject) {
-		client.getAllRooms().forEach(client::leaveRoom);
-		client.joinRoom(roomCode);
-		users.put(id, receiveObject.get("name").getAsString());
-
-		final JsonArray playerArray = new JsonArray();
-		users.values().forEach(playerArray::add);
-
-		final JsonObject sendObject = new JsonObject();
-		sendObject.addProperty("code", roomCode);
-		sendObject.add("players", playerArray);
-
-		broadcast.accept("lobby", sendObject);
+	public void join(long id, JsonObject jsonObject) {
+		users.put(id, jsonObject.get("name").getAsString());
+		users.keySet().forEach(userId -> webserver.sendSocketEvent(userId, "lobby", getRoomObject(userId)));
 	}
 
-	public void remove(long id) {
+	public boolean remove(long id) {
+		final boolean isHost = id == host;
+		webserver.sendSocketEvent(id, "home", null);
 		users.remove(id);
+		users.keySet().forEach(userId -> {
+			if (isHost) {
+				webserver.sendSocketEvent(userId, "home", null);
+			} else {
+				webserver.sendSocketEvent(userId, "lobby", getRoomObject(userId));
+			}
+		});
+		return isHost;
 	}
 
 	public boolean containsUser(long id) {
 		return users.containsKey(id);
+	}
+
+	private JsonObject getRoomObject(long id) {
+		final JsonArray jsonArray = new JsonArray();
+		users.values().forEach(jsonArray::add);
+
+		final JsonObject jsonObject = new JsonObject();
+		jsonObject.addProperty("code", roomCode);
+		jsonObject.add("players", jsonArray);
+		jsonObject.addProperty("host", id == host);
+
+		return jsonObject;
 	}
 
 	public static String generateRoomCode() {

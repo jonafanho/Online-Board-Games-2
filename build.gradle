@@ -13,6 +13,7 @@ dependencies {
 	implementation "com.google.code.gson:gson:+"
 	implementation "it.unimi.dsi:fastutil:+"
 	implementation "com.corundumstudio.socketio:netty-socketio:+"
+	implementation "com.github.jonafanho:Socket-IO-Webserver:master-SNAPSHOT"
 }
 
 jar {
@@ -27,6 +28,12 @@ task downloadFiles {
 		dest "src/main/resources/assets/website/socket.io.js"
 		overwrite true
 		retries - 1
+	}
+}
+
+allprojects {
+	repositories {
+		maven { url "https://jitpack.io" }
 	}
 }
 
