@@ -28,4 +28,4 @@ bin/
 
 *.DS_Store
 
-socket.io.js
+**/resources/static/

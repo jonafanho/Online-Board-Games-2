@@ -1,0 +1,14 @@
+.mat-mdc-tab-group {
+	overflow: hidden;
+}
+
+.content {
+	background-color: #7777770F;
+	box-sizing: border-box;
+	height: 100%;
+	padding: 1em;
+}
+
+.games {
+	overflow-y: auto;
+}
