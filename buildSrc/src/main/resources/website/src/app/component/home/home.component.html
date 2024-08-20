@@ -1,38 +1,52 @@
 <app-title titleText="Welcome!" descriptionText="Join or create a room to get started.">
 	<mat-tab-group animationDuration="0" dynamicHeight>
 		<mat-tab label="Join a Room">
-			<form class="column gap content" (ngSubmit)="onJoinRoom(roomCodeInput.value)">
-				<div class="row gap-small center">
+			@if (loading) {
+				<div class="column center box">
+					<div class="spacing"></div>
+					<mat-spinner/>
+					<div class="spacing"></div>
+				</div>
+			} @else {
+				<form class="row gap-small center box" (ngSubmit)="onJoinRoom(roomCodeInput.value)">
 					<mat-form-field class="spacing" subscriptSizing="dynamic">
 						<mat-label>Room Code</mat-label>
-						<input matInput type="text" aria-label="Room Code" #roomCodeInput (input)="textChanged(roomCodeInput)" autocomplete="false" spellcheck="false" maxlength="6"/>
+						<input matInput type="search" aria-label="Room Code" #roomCodeInput (input)="textChanged(roomCodeInput.value)" [value]="roomCodeValue" autocomplete="false" spellcheck="false" maxlength="6"/>
 					</mat-form-field>
 					<button mat-mini-fab type="submit" [disabled]="joinRoomDisabled">
 						<mat-icon>arrow_forward</mat-icon>
 					</button>
-				</div>
-			</form>
+				</form>
+			}
 		</mat-tab>
 		<mat-tab label="Create a Room">
-			<div class="column gap content">
-				<mat-form-field subscriptSizing="dynamic">
-					<mat-label>Search</mat-label>
-					<input matInput type="search" aria-label="Search" #searchInput (input)="searchGames(searchInput.value)" autocomplete="false" spellcheck="false"/>
-				</mat-form-field>
-				<div class="column gap games">
-					@for (game of filteredGames; track game) {
-					<mat-card class="card" appearance="outlined">
-						<mat-card-header>
-							<mat-card-title>{{ game.title }}</mat-card-title>
-								<mat-card-subtitle>{{ game.description }}</mat-card-subtitle>
-							</mat-card-header>
-							<mat-card-actions align="end">
-								<button mat-button (click)="onCreateRoom(game.id)">Play</button>
-							</mat-card-actions>
-						</mat-card>
-					}
+			@if (loading) {
+				<div class="column center box">
+					<div class="spacing"></div>
+					<mat-spinner/>
+					<div class="spacing"></div>
 				</div>
-			</div>
+			} @else {
+				<div class="column gap box">
+					<mat-form-field subscriptSizing="dynamic">
+						<mat-label>Search</mat-label>
+						<input matInput type="search" aria-label="Search" #searchInput (input)="searchGames(searchInput.value)" autocomplete="false" spellcheck="false"/>
+					</mat-form-field>
+					<div class="column gap games">
+						@for (game of filteredGames; track game) {
+							<mat-card class="card" appearance="outlined">
+								<mat-card-header>
+									<mat-card-title>{{ game.title }}</mat-card-title>
+									<mat-card-subtitle>{{ game.description }}</mat-card-subtitle>
+								</mat-card-header>
+								<mat-card-actions align="end">
+									<button mat-button (click)="onCreateRoom(game.id)">Play</button>
+								</mat-card-actions>
+							</mat-card>
+						}
+					</div>
+				</div>
+			}
 		</mat-tab>
 	</mat-tab-group>
 </app-title>

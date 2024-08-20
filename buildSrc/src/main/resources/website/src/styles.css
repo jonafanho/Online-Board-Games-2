@@ -20,6 +20,13 @@ mat-spinner, mat-checkbox {
 	filter: grayscale(1);
 }
 
+.box {
+	background-color: #7777770F;
+	box-sizing: border-box;
+	height: 100%;
+	padding: 1em;
+}
+
 .column {
 	display: flex;
 	flex-flow: column nowrap;
@@ -38,6 +45,11 @@ mat-spinner, mat-checkbox {
 .row-reverse {
 	display: flex;
 	flex-flow: row-reverse nowrap;
+}
+
+.flow {
+	display: flex;
+	flex-flow: wrap;
 }
 
 .gap {

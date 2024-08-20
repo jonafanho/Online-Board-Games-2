@@ -1,4 +1,4 @@
-package org.game.game.the_round_table;
+package org.game.library.the_round_table;
 
 public interface Utilities {
 

@@ -1,0 +1,9 @@
+<app-title [titleText]="getGameTitle()" [descriptionText]="getRoomCode()">
+	<div class="column gap">
+		<div class="row gap-small">
+			<button mat-flat-button (click)="onJoinRoom()">Join Room</button>
+			<button mat-button (click)="editPlayerProfile()">Edit Player Profile</button>
+		</div>
+		<div>Players</div>
+	</div>
+</app-title>
