@@ -1,7 +1,15 @@
 <div class="column gap content">
-	<h1>{{ titleText }}</h1>
+	<div class="row gap-small center">
+		<h1 class="spacing">{{ titleText }}</h1>
+		@if (showHomeButton) {
+			<button mat-icon-button matTooltip="Back to Home" routerLink="/">
+				<mat-icon>home</mat-icon>
+			</button>
+		}
+	</div>
 	@if (descriptionText != "") {
 		<div>{{ descriptionText }}</div>
 	}
+	<br/>
 	<ng-content/>
 </div>

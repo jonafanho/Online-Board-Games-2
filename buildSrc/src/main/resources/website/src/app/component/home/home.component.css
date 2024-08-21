@@ -5,3 +5,7 @@
 .games {
 	overflow-y: auto;
 }
+
+.fill {
+	width: 100%;
+}

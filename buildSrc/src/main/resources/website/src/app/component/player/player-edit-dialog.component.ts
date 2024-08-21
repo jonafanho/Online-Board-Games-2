@@ -9,9 +9,15 @@ import {MatButtonToggleModule} from "@angular/material/button-toggle";
 import {MatIconModule} from "@angular/material/icon";
 
 const ICONS = [
-	"person", "face_1", "face_2", "face_3", "face_4", "face_5", "face_6", "face_7", "face_8", "face_9", "support_agent",
-	"train", "light_mode", "dark_mode", "star", "smart_toy", "casino", "sports_basketball", "explore", "castle", "park", "flag",
+	"person", "group", "face_1", "face_2", "face_3", "face_4", "face_5", "face_6", "child_care", "support_agent",
+	"light_mode", "dark_mode", "star", "bolt", "favorite", "public", "eco", "park", "forest", "pets",
+	"cruelty_free", "bug_report", "restaurant", "ramen_dining", "cake", "icecream", "cookie", "warning", "info", "verified",
+	"train", "tram", "directions_car", "local_shipping", "fire_truck", "pedal_bike", "electric_scooter", "rocket", "hub", "front_hand",
+	"celebration", "token", "diamond", "lightbulb", "vpn_key", "fingerprint", "flag", "explore", "traffic", "school",
+	"music_note", "piano", "confirmation_number", "sports_soccer", "sports_baseball", "sports_volleyball", "sports_football", "sports_basketball", "sports_tennis", "pool",
+	"sports_esports", "smart_toy", "casino", "desktop_windows", "computer", "phone_android", "headphones", "church", "castle", "stadium",
 ];
+export const DEFAULT_ICON = ICONS[0];
 
 @Component({
 	selector: "app-player-edit-dialog",
@@ -37,7 +43,7 @@ export class PlayerEditDialogComponent {
 	constructor(private playerService: PlayerService) {
 		this.iconToggle = playerService.getIcon();
 		if (!ICONS.some(iconSet => iconSet.includes(this.iconToggle))) {
-			this.iconToggle = ICONS[0];
+			this.iconToggle = DEFAULT_ICON;
 		}
 	}
 
@@ -50,7 +56,7 @@ export class PlayerEditDialogComponent {
 	}
 
 	getSelectedIconColor(icon: string) {
-		return this.iconToggle == icon ? "accent" : "";
+		return this.iconToggle == icon ? "primary" : "";
 	}
 
 	onUpdate(name: string) {

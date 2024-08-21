@@ -1,9 +1,23 @@
-<app-title [titleText]="getGameTitle()" [descriptionText]="getRoomCode()">
+<app-title [titleText]="getGameTitle() + '&nbsp;'" [descriptionText]="getRoomCode() + '&nbsp;'">
 	<div class="column gap">
-		<div class="row gap-small">
-			<button mat-flat-button (click)="onJoinRoom()">Join Room</button>
-			<button mat-button (click)="editPlayerProfile()">Edit Player Profile</button>
+		<div class="row gap center">
+			<mat-slide-toggle #joinToggle (change)="joinOrLeaveRoom(joinToggle.checked)" [checked]="getIsPlayerJoined()">Join this room</mat-slide-toggle>
+			<div class="spacing"></div>
+			<button mat-button (click)="editPlayerProfile()">Edit Profile</button>
 		</div>
-		<div>Players</div>
+		<mat-list class="box">
+			<div mat-subheader>Players ({{ getRoomPlayers().length }})</div>
+			@for (player of getRoomPlayers(); track [player.uuid, player.icon, player.formattedName]) {
+				<mat-list-item>
+					<div matListItemAvatar class="column center">
+						<div class="spacing"></div>
+						<mat-icon>{{ player.icon }}</mat-icon>
+						<div class="spacing"></div>
+					</div>
+					<div matListItemTitle>{{ player.formattedName }}</div>
+					<div matListItemLine>{{ getPlayerStatus(player.uuid) }}</div>
+				</mat-list-item>
+			}
+		</mat-list>
 	</div>
 </app-title>

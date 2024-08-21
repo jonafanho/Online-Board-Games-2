@@ -4,6 +4,7 @@ import org.game.entity.Player;
 import org.game.entity.Room;
 import org.game.repository.PlayerRepository;
 import org.game.repository.RoomRepository;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -15,15 +16,17 @@ public final class RoomController {
 
 	private final RoomRepository roomRepository;
 	private final PlayerRepository playerRepository;
+	private final SimpMessagingTemplate messagingTemplate;
 
-	public RoomController(RoomRepository roomRepository, PlayerRepository playerRepository) {
+	public RoomController(RoomRepository roomRepository, PlayerRepository playerRepository, SimpMessagingTemplate messagingTemplate) {
 		this.roomRepository = roomRepository;
 		this.playerRepository = playerRepository;
+		this.messagingTemplate = messagingTemplate;
 	}
 
 	@GetMapping("/createRoom")
-	public Room createRoom(@RequestParam(value = "game") String game) {
-		return roomRepository.save(new Room(game));
+	public Room createRoom(@RequestParam(value = "hostUuid") String hostUuidString, @RequestParam(value = "game") String game) {
+		return roomRepository.save(new Room(game, getPlayer(hostUuidString)));
 	}
 
 	@GetMapping("/getRoom")
@@ -47,6 +50,7 @@ public final class RoomController {
 			@RequestParam(value = "icon", required = false) String icon
 	) {
 		final Player player = getPlayer(uuidString);
+
 		if (name == null && icon == null) {
 			return player;
 		} else {
@@ -56,7 +60,38 @@ public final class RoomController {
 			if (icon != null) {
 				player.setIcon(icon);
 			}
-			return playerRepository.save(player);
+
+			final Player newPlayer = playerRepository.save(player);
+			broadcastRoomUpdate(newPlayer);
+			return newPlayer;
 		}
+	}
+
+	@GetMapping("/joinRoom")
+	public Player joinRoom(@RequestParam(value = "playerUuid") String uuidString, @RequestParam(value = "roomCode") String roomCode) {
+		final Player player = getPlayer(uuidString);
+		roomRepository.findById(roomCode).ifPresent(room -> {
+			room.getPlayers().add(player);
+			broadcastRoomUpdate(roomRepository.save(room));
+		});
+		return player;
+	}
+
+	@GetMapping("/leaveRoom")
+	public Player leaveRoom(@RequestParam(value = "playerUuid") String uuidString, @RequestParam(value = "roomCode") String roomCode) {
+		final Player player = getPlayer(uuidString);
+		roomRepository.findById(roomCode).ifPresent(room -> {
+			room.getPlayers().remove(player);
+			broadcastRoomUpdate(roomRepository.save(room));
+		});
+		return player;
+	}
+
+	private void broadcastRoomUpdate(Player player) {
+		player.getRooms().forEach(this::broadcastRoomUpdate);
+	}
+
+	private void broadcastRoomUpdate(Room room) {
+		messagingTemplate.convertAndSend("/topic/" + room.getCode(), room);
 	}
 }

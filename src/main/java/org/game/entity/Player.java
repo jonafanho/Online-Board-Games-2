@@ -5,8 +5,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -27,5 +27,5 @@ public final class Player extends AbstractEntity {
 
 	@JsonIgnore
 	@ManyToMany(mappedBy = "players")
-	private final List<Room> rooms = new ArrayList<>();
+	private final Set<Room> rooms = new HashSet<>();
 }

@@ -1,5 +1,6 @@
 package org.game.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
@@ -16,10 +17,12 @@ import java.util.Calendar;
 public abstract class AbstractEntity {
 
 	@CreatedDate
+	@JsonIgnore
 	@Column
 	private Calendar createdDate;
 
 	@LastModifiedDate
+	@JsonIgnore
 	@Column
 	private Calendar lastModifiedDate;
 }

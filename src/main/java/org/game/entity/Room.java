@@ -1,16 +1,12 @@
 package org.game.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.*;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Random;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -26,21 +22,24 @@ public final class Room extends AbstractEntity {
 	@Column(nullable = false)
 	private String game;
 
-	@JsonIgnore
+	@ManyToOne
+	private Player host;
+
 	@ManyToMany
-	private final List<Player> players = new ArrayList<>();
+	private final Set<Player> players = new HashSet<>();
 
 	/**
-	 * @deprecated use {@link Room#Room(String)}
+	 * @deprecated use {@link Room#Room(String, Player)}
 	 */
 	@Deprecated
 	public Room() {
 		code = generateRoomCode();
 	}
 
-	public Room(String game) {
+	public Room(String game, Player host) {
 		code = generateRoomCode();
 		this.game = game;
+		this.host = host;
 	}
 
 	private static String generateRoomCode() {

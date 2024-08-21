@@ -1,7 +1,6 @@
 import {Component, inject} from "@angular/core";
-import {SocketService} from "../../service/socket.service";
+import {RoomService} from "../../service/room.service";
 import {TitleComponent} from "../title/title.component";
-import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatIconModule} from "@angular/material/icon";
 import {MatInputModule} from "@angular/material/input";
@@ -9,18 +8,22 @@ import {MatButtonModule} from "@angular/material/button";
 import {PlayerService} from "../../service/player.service";
 import {MatDialog} from "@angular/material/dialog";
 import {PlayerEditDialogComponent} from "../player/player-edit-dialog.component";
+import {MatSlideToggleModule} from "@angular/material/slide-toggle";
+import {RouterLink} from "@angular/router";
+import {MatListModule} from "@angular/material/list";
 
 @Component({
 	selector: "app-home",
 	standalone: true,
 	imports: [
 		TitleComponent,
-		FormsModule,
 		MatFormFieldModule,
 		MatIconModule,
 		MatInputModule,
 		MatButtonModule,
-		ReactiveFormsModule,
+		MatSlideToggleModule,
+		RouterLink,
+		MatListModule,
 	],
 	templateUrl: "./lobby.component.html",
 	styleUrl: "./lobby.component.css",
@@ -28,21 +31,31 @@ import {PlayerEditDialogComponent} from "../player/player-edit-dialog.component"
 export class LobbyComponent {
 	private readonly dialog = inject(MatDialog);
 
-	constructor(private readonly socketService: SocketService, private readonly playerService: PlayerService) {
-		const pathSplit = document.location.pathname.split("/");
-		this.socketService.initWithRoomCode(pathSplit[pathSplit.length - 1]);
+	constructor(private readonly roomService: RoomService, private readonly playerService: PlayerService) {
 	}
 
 	getRoomCode() {
-		return this.socketService.getRoomCode();
+		return this.roomService.getRoomCode();
 	}
 
 	getGameTitle() {
-		return this.socketService.getGameTitle();
+		return this.roomService.getGameTitle();
 	}
 
-	onJoinRoom() {
-		console.log(this.playerService.getName());
+	getIsPlayerJoined() {
+		return this.roomService.getIsPlayerJoined();
+	}
+
+	getRoomPlayers() {
+		return this.roomService.getRoomPlayers();
+	}
+
+	getPlayerStatus(uuid: string) {
+		return this.roomService.getHostUuid() == uuid ? "Host" : "Player";
+	}
+
+	joinOrLeaveRoom(join: boolean) {
+		this.playerService.joinOrLeaveRoom(this.getRoomCode(), join);
 	}
 
 	editPlayerProfile() {

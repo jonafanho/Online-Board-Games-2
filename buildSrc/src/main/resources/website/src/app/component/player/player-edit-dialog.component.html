@@ -7,14 +7,15 @@
 		</mat-form-field>
 		<div class="flow icons">
 			@for (icon of icons; track icon) {
-				<button mat-icon-button (click)="chooseIcon(icon)" [color]="getSelectedIconColor(icon)">
+				<button mat-icon-button [class]="getSelectedIconColor(icon)" (click)="chooseIcon(icon)" [color]="getSelectedIconColor(icon)">
 					<mat-icon>{{ icon }}</mat-icon>
 				</button>
 			}
 		</div>
+		<br/>
 	</div>
 </mat-dialog-content>
 <mat-dialog-actions>
-	<button mat-button (click)="onUpdate(nameInput.value)">Update</button>
+	<button mat-button (click)="onUpdate(nameInput.value)" cdkFocusInitial>Update</button>
 	<button mat-button (click)="onCancel()">Cancel</button>
 </mat-dialog-actions>

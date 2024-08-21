@@ -1,3 +1,7 @@
 .icons {
-	max-width: 528px;
+	max-width: 400px;
+}
+
+.primary {
+	background-color: var(--mdc-switch-selected-focus-handle-color);
 }

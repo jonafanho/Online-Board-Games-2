@@ -10,9 +10,11 @@ import {MatIconModule} from "@angular/material/icon";
 import {MatCardModule} from "@angular/material/card";
 import {MatProgressSpinnerModule} from "@angular/material/progress-spinner";
 import {HttpClient} from "@angular/common/http";
-import {BASE_URL, SocketService} from "../../service/socket.service";
+import {BASE_URL} from "../../service/room.service";
 import {Router} from "@angular/router";
 import {Room} from "../../entity/room";
+import {MatTooltipModule} from "@angular/material/tooltip";
+import {PlayerService} from "../../service/player.service";
 
 @Component({
 	selector: "app-home",
@@ -27,6 +29,7 @@ import {Room} from "../../entity/room";
 		MatIconModule,
 		MatCardModule,
 		MatProgressSpinnerModule,
+		MatTooltipModule,
 	],
 	templateUrl: "./home.component.html",
 	styleUrl: "./home.component.css",
@@ -37,7 +40,7 @@ export class HomeComponent {
 	protected joinRoomDisabled = true;
 	protected loading = false;
 
-	constructor(private readonly socketService: SocketService, private readonly httpClient: HttpClient, private readonly router: Router) {
+	constructor(private readonly playerService: PlayerService, private readonly httpClient: HttpClient, private readonly router: Router) {
 	}
 
 	textChanged(newValue: string) {
@@ -59,9 +62,6 @@ export class HomeComponent {
 
 	onCreateRoom(game: string) {
 		this.loading = true;
-		this.httpClient.get<Room>(`${BASE_URL}/createRoom?game=${game}`).subscribe(room => {
-			this.socketService.initWithRoom(room);
-			this.router.navigate([`/lobby/${room.code}`]).then();
-		});
+		this.httpClient.get<Room>(`${BASE_URL}/createRoom?hostUuid=${this.playerService.getUuid()}&game=${game}`).subscribe(({code}) => this.onJoinRoom(code));
 	}
 }
