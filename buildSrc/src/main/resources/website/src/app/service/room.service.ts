@@ -3,8 +3,9 @@ import {Stomp, StompSubscription} from "@stomp/stompjs";
 import {Room} from "../entity/room";
 import {HttpClient} from "@angular/common/http";
 import {NavigationEnd, Router} from "@angular/router";
-import {GAMES} from "./game.service";
 import {PlayerService} from "./player.service";
+import {Player} from "../entity/player";
+import {Game} from "../entity/game";
 
 const HOST = document.location.hostname == "localhost" ? "localhost:8080" : document.location.host;
 export const BASE_URL = `${document.location.protocol}//${HOST}/api`;
@@ -12,7 +13,7 @@ export const BASE_URL = `${document.location.protocol}//${HOST}/api`;
 @Injectable({providedIn: "root"})
 export class RoomService {
 	private room?: Room;
-	private gameTitle = "";
+	private game?: Game;
 	private isPlayerJoined = false;
 	private stompSubscription?: StompSubscription;
 
@@ -67,7 +68,15 @@ export class RoomService {
 	}
 
 	public getGameTitle() {
-		return this.gameTitle;
+		return this.game ? this.game.title : "";
+	}
+
+	public getGameMinPlayers() {
+		return this.game ? this.game.minPlayers : 0;
+	}
+
+	public getGameMaxPlayers() {
+		return this.game ? this.game.maxPlayers : 0;
 	}
 
 	public getIsPlayerJoined() {
@@ -78,14 +87,24 @@ export class RoomService {
 		return this.room ? this.room.players : [];
 	}
 
+	public removePlayer(uuid: string, roomCode: string, b: boolean) {
+		this.httpClient.get<Player>(`${BASE_URL}/leaveRoom?playerUuid=${uuid}&roomCode=${roomCode}`).subscribe();
+	}
+
+	public deleteRoom() {
+		if (this.room) {
+			this.httpClient.get<Player>(`${BASE_URL}/deleteRoom?code=${this.room.code}`).subscribe();
+		}
+	}
+
 	private updateRoom(room?: Room) {
 		this.room = room ? Room.copy(room) : undefined;
-		const filteredGames = GAMES.filter(game => game.id == this.getRoomGame());
-		this.gameTitle = filteredGames.length > 0 ? filteredGames[0].title : "";
+		this.game = Game.GAMES.filter(game => game.id == this.getRoomGame())[0];
 		this.isPlayerJoined = this.getRoomPlayers().some(player => player.uuid == this.playerService.getUuid());
 
 		if (this.room) {
-			this.room.players.sort((player1, player2) => player1.formattedName.localeCompare(player2.formattedName));
+			const hostUuid = this.room.host.uuid;
+			this.room.players.sort((player1, player2) => (hostUuid == player1.uuid ? "" : player1.formattedName).localeCompare(hostUuid == player2.uuid ? "" : player2.formattedName));
 		} else {
 			this.router.navigate([""]).then();
 		}

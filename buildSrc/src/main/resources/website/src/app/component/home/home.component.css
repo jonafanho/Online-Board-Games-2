@@ -1,4 +1,4 @@
-.mat-mdc-tab-group {
+.wrapper {
 	overflow: hidden;
 }
 
@@ -8,4 +8,8 @@
 
 .fill {
 	width: 100%;
+}
+
+.card-footer {
+	padding: 16px;
 }

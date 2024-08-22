@@ -1,57 +1,53 @@
 <app-title titleText="Welcome!" descriptionText="Join or create a room to get started.">
-	<mat-tab-group dynamicHeight>
+	<mat-tab-group dynamicHeight class="wrapper">
 		<mat-tab label="Join a Room">
-			@if (loading) {
-				<div class="column center box">
-					<div class="spacing"></div>
-					<mat-spinner/>
-					<div class="spacing"></div>
-				</div>
-			} @else {
-				<div class="column center box">
-					<form class="row gap-small center fill" (ngSubmit)="onJoinRoom(roomCodeInput.value)">
-						<mat-form-field class="spacing" subscriptSizing="dynamic">
-							<mat-label>Room Code</mat-label>
-							<input matInput type="search" aria-label="Room Code" #roomCodeInput (input)="textChanged(roomCodeInput.value)" [value]="roomCodeValue" autocomplete="false" spellcheck="false" maxlength="6"/>
-						</mat-form-field>
-						<button mat-icon-button type="submit" matTooltip="Join Room" [disabled]="joinRoomDisabled">
-							<mat-icon>arrow_forward</mat-icon>
-						</button>
-					</form>
-					<div class="spacing"></div>
-				</div>
-			}
+			<div class="column center box">
+				<form class="row gap-small center fill" (ngSubmit)="onJoinRoom(roomCodeInput.value)">
+					<mat-form-field class="spacing" subscriptSizing="dynamic">
+						<mat-label>Room Code</mat-label>
+						<input matInput type="search" aria-label="Room Code" #roomCodeInput (input)="textChanged(roomCodeInput.value)" [value]="roomCodeValue" autocomplete="false" spellcheck="false" maxlength="6"/>
+					</mat-form-field>
+					<button mat-icon-button type="submit" matTooltip="Join Room" [disabled]="joinRoomDisabled">
+						<mat-icon>arrow_forward</mat-icon>
+					</button>
+				</form>
+				<div class="spacing"></div>
+			</div>
 		</mat-tab>
 		<mat-tab label="Create a Room">
-			@if (loading) {
-				<div class="column center box">
-					<div class="spacing"></div>
-					<mat-spinner/>
-					<div class="spacing"></div>
-				</div>
-			} @else {
-				<div class="column gap box">
-					<mat-form-field subscriptSizing="dynamic">
-						<mat-label>Search</mat-label>
-						<input matInput type="search" aria-label="Search" #searchInput (input)="searchGames(searchInput.value)" autocomplete="false" spellcheck="false"/>
-					</mat-form-field>
-					@if (filteredGames.length > 0) {
-						<div class="column gap games">
-							@for (game of filteredGames; track game) {
-								<mat-card class="card" appearance="outlined">
-									<mat-card-header>
-										<mat-card-title>{{ game.title }}</mat-card-title>
-										<mat-card-subtitle>{{ game.description }}</mat-card-subtitle>
-									</mat-card-header>
-									<mat-card-actions align="end">
-										<button mat-button (click)="onCreateRoom(game.id)">Play</button>
-									</mat-card-actions>
-								</mat-card>
-							}
-						</div>
-					}
-				</div>
-			}
+			<div class="column gap box">
+				<mat-form-field subscriptSizing="dynamic">
+					<mat-label>Search</mat-label>
+					<input matInput type="search" aria-label="Search" #searchInput (input)="searchGames(searchInput.value)" autocomplete="false" spellcheck="false"/>
+				</mat-form-field>
+				@if (filteredGames.length > 0) {
+					<div class="column gap games">
+						@for (game of filteredGames; track game) {
+							<mat-card appearance="outlined">
+								<mat-card-header>
+									<mat-card-title>{{ game.title }}</mat-card-title>
+									<mat-card-subtitle>{{ game.minPlayers == game.maxPlayers ? game.minPlayers : game.minPlayers + '-' + game.maxPlayers }} Players</mat-card-subtitle>
+								</mat-card-header>
+								<br/>
+								<mat-card-content>{{ game.description }}</mat-card-content>
+								<mat-card-footer class="card-footer">
+									<div class="row gap">
+										<mat-chip-set class="spacing" aria-label="Tags">
+											@for (tag of game.tags; track tag) {
+												<mat-chip>{{ tag }}</mat-chip>
+											}
+										</mat-chip-set>
+										<div class="column">
+											<div class="spacing"></div>
+											<button mat-button (click)="onCreateRoom(game.id)">Play</button>
+										</div>
+									</div>
+								</mat-card-footer>
+							</mat-card>
+						}
+					</div>
+				}
+			</div>
 		</mat-tab>
 	</mat-tab-group>
 </app-title>

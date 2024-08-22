@@ -11,6 +11,8 @@ import {PlayerEditDialogComponent} from "../player/player-edit-dialog.component"
 import {MatSlideToggleModule} from "@angular/material/slide-toggle";
 import {RouterLink} from "@angular/router";
 import {MatListModule} from "@angular/material/list";
+import {MatTooltipModule} from "@angular/material/tooltip";
+import {Player} from "../../entity/player";
 
 @Component({
 	selector: "app-home",
@@ -24,6 +26,7 @@ import {MatListModule} from "@angular/material/list";
 		MatSlideToggleModule,
 		RouterLink,
 		MatListModule,
+		MatTooltipModule,
 	],
 	templateUrl: "./lobby.component.html",
 	styleUrl: "./lobby.component.css",
@@ -50,15 +53,48 @@ export class LobbyComponent {
 		return this.roomService.getRoomPlayers();
 	}
 
+	isPlayerHost() {
+		return this.isHost(this.playerService.getUuid());
+	}
+
+	canRemovePlayer(uuid: string) {
+		return this.isPlayerHost() && this.playerService.getUuid() != uuid;
+	}
+
 	getPlayerStatus(uuid: string) {
-		return this.roomService.getHostUuid() == uuid ? "Host" : "Player";
+		return this.isHost(uuid) ? "Host" : "Player";
+	}
+
+	getGameMaxPlayers() {
+		return this.roomService.getGameMaxPlayers();
+	}
+
+	isValidPlayerCount() {
+		const playerCount = this.getRoomPlayers().length;
+		return playerCount >= this.roomService.getGameMinPlayers() && playerCount <= this.roomService.getGameMaxPlayers();
+	}
+
+	removePlayer(uuid: string) {
+		this.roomService.removePlayer(uuid, this.getRoomCode(), false);
 	}
 
 	joinOrLeaveRoom(join: boolean) {
 		this.playerService.joinOrLeaveRoom(this.getRoomCode(), join);
 	}
 
+	startGame() {
+		console.log("Start");
+	}
+
+	deleteRoom() {
+		this.roomService.deleteRoom();
+	}
+
 	editPlayerProfile() {
 		this.dialog.open(PlayerEditDialogComponent);
+	}
+
+	private isHost(uuid: string) {
+		return this.roomService.getHostUuid() == uuid;
 	}
 }

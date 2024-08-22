@@ -1,0 +1,11 @@
+.remove-player-button::before {
+	height: 16px !important;
+}
+
+.wrapper {
+	overflow-y: hidden;
+}
+
+.players {
+	overflow-y: auto;
+}

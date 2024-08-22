@@ -4,7 +4,6 @@ import {FormsModule} from "@angular/forms";
 import {MatButtonModule} from "@angular/material/button";
 import {TitleComponent} from "../title/title.component";
 import {MatSelectModule} from "@angular/material/select";
-import {GAMES} from "../../service/game.service";
 import {MatTabsModule} from "@angular/material/tabs";
 import {MatIconModule} from "@angular/material/icon";
 import {MatCardModule} from "@angular/material/card";
@@ -15,6 +14,8 @@ import {Router} from "@angular/router";
 import {Room} from "../../entity/room";
 import {MatTooltipModule} from "@angular/material/tooltip";
 import {PlayerService} from "../../service/player.service";
+import {Game} from "../../entity/game";
+import {MatChipsModule} from "@angular/material/chips";
 
 @Component({
 	selector: "app-home",
@@ -30,15 +31,15 @@ import {PlayerService} from "../../service/player.service";
 		MatCardModule,
 		MatProgressSpinnerModule,
 		MatTooltipModule,
+		MatChipsModule,
 	],
 	templateUrl: "./home.component.html",
 	styleUrl: "./home.component.css",
 })
 export class HomeComponent {
 	protected roomCodeValue = "";
-	protected filteredGames = GAMES;
+	protected filteredGames = Game.GAMES;
 	protected joinRoomDisabled = true;
-	protected loading = false;
 
 	constructor(private readonly playerService: PlayerService, private readonly httpClient: HttpClient, private readonly router: Router) {
 	}
@@ -50,9 +51,9 @@ export class HomeComponent {
 
 	searchGames(searchText: string) {
 		if (searchText == "") {
-			this.filteredGames = GAMES;
+			this.filteredGames = Game.GAMES;
 		} else {
-			this.filteredGames = GAMES.filter(game => `${game.id}\n${game.title}\n${game.tags}\n${game.description}`.toLowerCase().includes(searchText.toLowerCase()));
+			this.filteredGames = Game.GAMES.filter(game => `${game.id}\n${game.title}\n${game.hiddenTags}\n${game.description}`.toLowerCase().includes(searchText.toLowerCase()));
 		}
 	}
 
@@ -61,7 +62,6 @@ export class HomeComponent {
 	}
 
 	onCreateRoom(game: string) {
-		this.loading = true;
 		this.httpClient.get<Room>(`${BASE_URL}/createRoom?hostUuid=${this.playerService.getUuid()}&game=${game}`).subscribe(({code}) => this.onJoinRoom(code));
 	}
 }

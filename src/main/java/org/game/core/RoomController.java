@@ -34,6 +34,13 @@ public final class RoomController {
 		return roomRepository.findById(code).orElse(null);
 	}
 
+	@GetMapping("/deleteRoom")
+	public Room deleteRoom(@RequestParam(value = "code") String code) {
+		roomRepository.deleteById(code);
+		broadcastRoomUpdate(code);
+		return null;
+	}
+
 	@GetMapping("/getPlayer")
 	public Player getPlayer(@RequestParam(value = "uuid") String uuidString) {
 		try {
@@ -89,6 +96,10 @@ public final class RoomController {
 
 	private void broadcastRoomUpdate(Player player) {
 		player.getRooms().forEach(this::broadcastRoomUpdate);
+	}
+
+	private void broadcastRoomUpdate(String roomCode) {
+		messagingTemplate.convertAndSend("/topic/" + roomCode, String.valueOf((Object) null));
 	}
 
 	private void broadcastRoomUpdate(Room room) {
