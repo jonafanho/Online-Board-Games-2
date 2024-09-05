@@ -12,7 +12,6 @@ import {MatSlideToggleModule} from "@angular/material/slide-toggle";
 import {RouterLink} from "@angular/router";
 import {MatListModule} from "@angular/material/list";
 import {MatTooltipModule} from "@angular/material/tooltip";
-import {Player} from "../../entity/player";
 
 @Component({
 	selector: "app-home",
@@ -54,11 +53,11 @@ export class LobbyComponent {
 	}
 
 	isPlayerHost() {
-		return this.isHost(this.playerService.getUuid());
+		return this.isHost(this.playerService.getPlayer().uuid);
 	}
 
 	canRemovePlayer(uuid: string) {
-		return this.isPlayerHost() && this.playerService.getUuid() != uuid;
+		return this.isPlayerHost() && this.playerService.getPlayer().uuid != uuid;
 	}
 
 	getPlayerStatus(uuid: string) {
@@ -75,11 +74,15 @@ export class LobbyComponent {
 	}
 
 	removePlayer(uuid: string) {
-		this.roomService.removePlayer(uuid, this.getRoomCode(), false);
+		this.roomService.removePlayer(uuid, this.getRoomCode());
 	}
 
 	joinOrLeaveRoom(join: boolean) {
-		this.playerService.joinOrLeaveRoom(this.getRoomCode(), join);
+		if (join) {
+			this.roomService.joinRoom(this.getRoomCode());
+		} else {
+			this.roomService.removePlayer(this.playerService.getPlayer().uuid, this.getRoomCode());
+		}
 	}
 
 	startGame() {
@@ -95,6 +98,6 @@ export class LobbyComponent {
 	}
 
 	private isHost(uuid: string) {
-		return this.roomService.getHostUuid() == uuid;
+		return uuid && this.roomService.getHostUuid() == uuid;
 	}
 }

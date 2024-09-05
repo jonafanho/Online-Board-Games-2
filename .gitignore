@@ -30,3 +30,5 @@ bin/
 
 **/resources/static/
 game.ts
+BaseGameProperties.java
+GameStateHelper.java

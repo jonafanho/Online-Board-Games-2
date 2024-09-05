@@ -41,14 +41,14 @@ export class PlayerEditDialogComponent {
 	private iconToggle;
 
 	constructor(private playerService: PlayerService) {
-		this.iconToggle = playerService.getIcon();
+		this.iconToggle = playerService.getPlayer().icon;
 		if (!ICONS.some(iconSet => iconSet.includes(this.iconToggle))) {
 			this.iconToggle = DEFAULT_ICON;
 		}
 	}
 
 	getPlayerName() {
-		return this.playerService.getName();
+		return this.playerService.getPlayer().name;
 	}
 
 	chooseIcon(icon: string) {
@@ -60,7 +60,7 @@ export class PlayerEditDialogComponent {
 	}
 
 	onUpdate(name: string) {
-		this.playerService.setPlayerProfile(name, this.iconToggle);
+		this.playerService.updateProfile(name, this.iconToggle);
 		this.onCancel();
 	}
 

@@ -8,14 +8,11 @@ import {MatTabsModule} from "@angular/material/tabs";
 import {MatIconModule} from "@angular/material/icon";
 import {MatCardModule} from "@angular/material/card";
 import {MatProgressSpinnerModule} from "@angular/material/progress-spinner";
-import {HttpClient} from "@angular/common/http";
-import {BASE_URL} from "../../service/room.service";
 import {Router} from "@angular/router";
-import {Room} from "../../entity/room";
 import {MatTooltipModule} from "@angular/material/tooltip";
-import {PlayerService} from "../../service/player.service";
 import {Game} from "../../entity/game";
 import {MatChipsModule} from "@angular/material/chips";
+import {RoomService} from "../../service/room.service";
 
 @Component({
 	selector: "app-home",
@@ -41,7 +38,7 @@ export class HomeComponent {
 	protected filteredGames = Game.GAMES;
 	protected joinRoomDisabled = true;
 
-	constructor(private readonly playerService: PlayerService, private readonly httpClient: HttpClient, private readonly router: Router) {
+	constructor(private readonly roomService: RoomService, private readonly router: Router) {
 	}
 
 	textChanged(newValue: string) {
@@ -58,10 +55,10 @@ export class HomeComponent {
 	}
 
 	onJoinRoom(roomCode: string) {
-		this.router.navigate([`/lobby/${roomCode}`]).then();
+		this.router.navigate([`/game/${roomCode}`]).then();
 	}
 
 	onCreateRoom(game: string) {
-		this.httpClient.get<Room>(`${BASE_URL}/createRoom?hostUuid=${this.playerService.getUuid()}&game=${game}`).subscribe(({code}) => this.onJoinRoom(code));
+		this.roomService.createRoom(game, code => this.onJoinRoom(code));
 	}
 }

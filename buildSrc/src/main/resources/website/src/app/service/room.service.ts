@@ -1,14 +1,13 @@
 import {Injectable} from "@angular/core";
 import {Stomp, StompSubscription} from "@stomp/stompjs";
 import {Room} from "../entity/room";
-import {HttpClient} from "@angular/common/http";
 import {NavigationEnd, Router} from "@angular/router";
 import {PlayerService} from "./player.service";
-import {Player} from "../entity/player";
 import {Game} from "../entity/game";
+import {HttpClient} from "@angular/common/http";
 
 const HOST = document.location.hostname == "localhost" ? "localhost:8080" : document.location.host;
-export const BASE_URL = `${document.location.protocol}//${HOST}/api`;
+export const BASE_URL = `${document.location.protocol}//${HOST}`;
 
 @Injectable({providedIn: "root"})
 export class RoomService {
@@ -17,7 +16,7 @@ export class RoomService {
 	private isPlayerJoined = false;
 	private stompSubscription?: StompSubscription;
 
-	constructor(private playerService: PlayerService, private readonly httpClient: HttpClient, private readonly router: Router) {
+	constructor(private playerService: PlayerService, private readonly router: Router, private readonly httpClient: HttpClient) {
 		const client = Stomp.client(`ws://${HOST}/socket`);
 		client.onWebSocketError = error => console.error("WebSocket error!", error);
 		client.onStompError = frame => console.error("Broker error!", frame);
@@ -30,17 +29,28 @@ export class RoomService {
 				this.stompSubscription = undefined;
 			}
 
+			const getRoomUpdate = (roomCode: string) => this.httpClient.get<Room>(`${BASE_URL}/api/public/getRoom?code=${roomCode}`).subscribe(room => this.updateRoom(room));
 			const pathSplit = router.url.split("/");
 			const roomCode = pathSplit[pathSplit.length - 1];
 
 			if (roomCode) {
 				try {
-					this.stompSubscription = client.subscribe(`/topic/${roomCode}`, ({body}) => this.updateRoom(JSON.parse(body)));
+					this.stompSubscription = client.subscribe(`/topic/${roomCode}`, ({body}) => {
+						const {socketUpdateType, sender} = JSON.parse(body) as { socketUpdateType: string, sender: string };
+						if (sender != this.playerService.getPlayer().uuid) {
+							if (socketUpdateType == "ROOM") {
+								getRoomUpdate(roomCode);
+							}
+							if (socketUpdateType == "STATE") {
+								this.playerService.postRequest(`/api/secured/getState?code=${roomCode}`, body, test => console.log(test));
+							}
+						}
+					});
 				} catch (e) {
 				}
 
 				if (roomCode != this.room?.code) {
-					this.httpClient.get<Room>(`${BASE_URL}/getRoom?code=${roomCode}`).subscribe(room => this.updateRoom(room));
+					getRoomUpdate(roomCode);
 				}
 			} else {
 				this.updateRoom(undefined);
@@ -87,20 +97,34 @@ export class RoomService {
 		return this.room ? this.room.players : [];
 	}
 
-	public removePlayer(uuid: string, roomCode: string, b: boolean) {
-		this.httpClient.get<Player>(`${BASE_URL}/leaveRoom?playerUuid=${uuid}&roomCode=${roomCode}`).subscribe();
+	public createRoom(game: string, callback: (code: string) => void) {
+		this.playerService.getRequest<Room>(`/api/secured/createRoom?game=${game}`, ({code}) => callback(code));
+	}
+
+	public joinRoom(roomCode: string) {
+		this.playerService.getRequest<Room>(`/api/secured/joinRoom?code=${roomCode}`, room => this.updateRoom(room));
+	}
+
+	public removePlayer(uuid: string, roomCode: string) {
+		this.playerService.getRequest<Room>(`/api/secured/leaveRoom?code=${roomCode}&playerUuid=${uuid}`, room => this.updateRoom(room));
 	}
 
 	public deleteRoom() {
 		if (this.room) {
-			this.httpClient.get<Player>(`${BASE_URL}/deleteRoom?code=${this.room.code}`).subscribe();
+			this.playerService.getRequest(`/api/secured/deleteRoom?code=${this.room.code}`, () => this.updateRoom(undefined));
+		}
+	}
+
+	public sendUpdate(body: string) {
+		if (this.room) {
+			this.playerService.postRequest(`/api/secured/update?code=${this.room.code}`, body, test => console.log(test));
 		}
 	}
 
 	private updateRoom(room?: Room) {
 		this.room = room ? Room.copy(room) : undefined;
 		this.game = Game.GAMES.filter(game => game.id == this.getRoomGame())[0];
-		this.isPlayerJoined = this.getRoomPlayers().some(player => player.uuid == this.playerService.getUuid());
+		this.isPlayerJoined = this.getRoomPlayers().some(player => player.uuid == this.playerService.getPlayer().uuid);
 
 		if (this.room) {
 			const hostUuid = this.room.host.uuid;

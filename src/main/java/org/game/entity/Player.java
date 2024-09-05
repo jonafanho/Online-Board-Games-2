@@ -2,6 +2,7 @@ package org.game.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,6 +18,9 @@ public final class Player extends AbstractEntity {
 	@GeneratedValue
 	private UUID uuid;
 
+	@Getter(AccessLevel.NONE)
+	private final UUID token = UUID.randomUUID();
+
 	@Setter
 	@Column(nullable = false)
 	private String name = "";
@@ -28,4 +32,15 @@ public final class Player extends AbstractEntity {
 	@JsonIgnore
 	@ManyToMany(mappedBy = "players")
 	private final Set<Room> rooms = new HashSet<>();
+
+	public static class PlayerRegistration {
+
+		public final UUID uuid;
+		public final UUID token;
+
+		public PlayerRegistration(Player player) {
+			uuid = player.uuid;
+			token = player.token;
+		}
+	}
 }

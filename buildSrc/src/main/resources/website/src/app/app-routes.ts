@@ -4,7 +4,7 @@ import {HomeComponent} from "./component/home/home.component";
 
 export const routes: Routes = [
 	{
-		path: "lobby",
+		path: "game",
 		children: [
 			{
 				path: "**",

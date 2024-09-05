@@ -1,7 +1,14 @@
 package org.game.entity;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
+import org.game.core.AbstractGameState;
+import org.game.core.GameStateHelper;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.HashSet;
 import java.util.Locale;
@@ -22,6 +29,10 @@ public final class Room extends AbstractEntity {
 	@Column(nullable = false)
 	private String game;
 
+	@Getter(AccessLevel.NONE)
+	@JdbcTypeCode(SqlTypes.JSON)
+	private String state;
+
 	@ManyToOne
 	private Player host;
 
@@ -40,6 +51,39 @@ public final class Room extends AbstractEntity {
 		code = generateRoomCode();
 		this.game = game;
 		this.host = host;
+		try {
+			state = new ObjectMapper().writeValueAsString(GameStateHelper.create(game));
+		} catch (JsonProcessingException ignored) {
+		}
+	}
+
+	public Room(Room room) {
+		code = room.code;
+		game = room.game;
+		state = room.state;
+		host = room.host;
+		players.addAll(room.players);
+	}
+
+	public <T extends AbstractGameState<U>, U> void processAndUpdateState(Class<T> gameStateClass, Class<U> requestBodyClass, Player player, String bodyString) {
+		if (state == null) {
+			state = "{}";
+		}
+
+		try {
+			final T gameState = new ObjectMapper().readValue(state, gameStateClass);
+			gameState.process(player, new ObjectMapper().readValue(bodyString, requestBodyClass));
+			state = new ObjectMapper().writeValueAsString(gameState);
+		} catch (JsonProcessingException ignored) {
+		}
+	}
+
+	public <T extends AbstractGameState<U>, U> AbstractGameState<?> getStateForPlayer(Class<T> gameStateClass, Player player) {
+		try {
+			return new ObjectMapper().readValue(state, gameStateClass).getStateForPlayer(player);
+		} catch (JsonProcessingException ignored) {
+			return null;
+		}
 	}
 
 	private static String generateRoomCode() {
