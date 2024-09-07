@@ -1,0 +1,9 @@
+{
+	"vote": {
+		"type": "QuestResult"
+	},
+	"players": {
+		"array": true,
+		"type": "uuid"
+	}
+}

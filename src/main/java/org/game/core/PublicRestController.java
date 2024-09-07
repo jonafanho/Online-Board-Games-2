@@ -1,9 +1,7 @@
 package org.game.core;
 
 import org.game.entity.Player;
-import org.game.entity.Room;
 import org.game.repository.PlayerRepository;
-import org.game.repository.RoomRepository;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.*;
@@ -16,11 +14,9 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin("http://localhost:4200")
 public final class PublicRestController {
 
-	private final RoomRepository roomRepository;
 	private final PlayerRepository playerRepository;
 
-	public PublicRestController(RoomRepository roomRepository, PlayerRepository playerRepository) {
-		this.roomRepository = roomRepository;
+	public PublicRestController(PlayerRepository playerRepository) {
 		this.playerRepository = playerRepository;
 	}
 
@@ -50,18 +46,6 @@ public final class PublicRestController {
 	@GetMapping("/getPlayer")
 	public Player getPlayer(@RequestParam(value = "playerUuid") String uuidString) {
 		return Utilities.parseUuid(uuidString, uuid -> playerRepository.findById(uuid).orElse(null), null);
-	}
-
-	/**
-	 * Get basic details about a room. To prevent cheating, the game state is never returned.
-	 *
-	 * @param code room code
-	 * @return room details or {@code null} if room code is not found
-	 */
-	@Nullable
-	@GetMapping("/getRoom")
-	public Room getRoom(@RequestParam(value = "code") String code) {
-		return roomRepository.findById(code).orElse(null);
 	}
 
 	private Player.PlayerRegistration createNewPlayerRegistration() {

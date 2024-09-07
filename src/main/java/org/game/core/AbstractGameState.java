@@ -1,12 +1,12 @@
 package org.game.core;
 
 import org.game.entity.Player;
+import org.springframework.lang.NonNull;
 
-public abstract class AbstractGameState<T> {
+public abstract class AbstractGameState<T extends Enum<T>, U extends AbstractRequest, V extends AbstractClientState<T>> extends AbstractState<T> {
 
-	public int stage = 0;
+	public abstract void process(Player player, U request);
 
-	public abstract void process(Player player, T requestBody);
-
-	public abstract AbstractGameState<T> getStateForPlayer(Player player);
+	@NonNull
+	public abstract V getStateForPlayer(Player player);
 }

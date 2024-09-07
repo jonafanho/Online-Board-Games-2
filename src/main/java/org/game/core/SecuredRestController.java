@@ -56,9 +56,9 @@ public final class SecuredRestController {
 	public Room deleteRoom(@RequestHeader(AuthenticationFilter.UUID_HEADER) String uuidString, @RequestParam(value = "code") String code) {
 		return getPlayerAndRoom(uuidString, code, (player, room) -> {
 			if (room.getHost().getUuid().equals(player.getUuid())) {
-				final Room deletedRoom = new Room(room);
+				final Room deletedRoom = new Room(room, null);
 				roomRepository.delete(room);
-				broadcastRoomUpdate(player, deletedRoom, SocketUpdateType.ROOM);
+				broadcastRoomUpdate(player, deletedRoom);
 				return deletedRoom;
 			} else {
 				return null;
@@ -88,7 +88,7 @@ public final class SecuredRestController {
 					player.setIcon(icon);
 				}
 				final Player newPlayer = playerRepository.save(player);
-				newPlayer.getRooms().forEach(room -> broadcastRoomUpdate(null, room, SocketUpdateType.ROOM));
+				newPlayer.getRooms().forEach(room -> broadcastRoomUpdate(null, room));
 				return newPlayer;
 			}
 		});
@@ -107,7 +107,7 @@ public final class SecuredRestController {
 		return getPlayerAndRoom(uuidString, code, (player, room) -> {
 			room.getPlayers().add(player);
 			final Room newRoom = roomRepository.save(room);
-			broadcastRoomUpdate(player, newRoom, SocketUpdateType.ROOM);
+			broadcastRoomUpdate(player, newRoom);
 			return newRoom;
 		});
 	}
@@ -127,7 +127,7 @@ public final class SecuredRestController {
 			if (uuidString.equals(playerUuidString) || room.getHost().getUuid().equals(player.getUuid())) {
 				room.getPlayers().remove(playerToRemove);
 				final Room newRoom = roomRepository.save(room);
-				broadcastRoomUpdate(player, newRoom, SocketUpdateType.ROOM);
+				broadcastRoomUpdate(player, newRoom);
 				return newRoom;
 			} else {
 				return null;
@@ -136,35 +136,35 @@ public final class SecuredRestController {
 	}
 
 	/**
-	 * Send a game update. The response is specific to the calling user.
+	 * Get basic details about a room. The game state returned is dependent on the calling user.
+	 *
+	 * @param uuidString the UUID (as string) of the calling user
+	 * @param code       room code
+	 * @return room details or {@code null} if room code is not found
+	 */
+	@Nullable
+	@GetMapping("/getRoom")
+	public Room getRoom(@RequestHeader(AuthenticationFilter.UUID_HEADER) String uuidString, @RequestParam(value = "code") String code) {
+		return getPlayerAndRoom(uuidString, code, GameStateHelper::getRoomWithStateForPlayer);
+	}
+
+	/**
+	 * Send a game update. The game state returned is dependent on the calling user.
 	 *
 	 * @param uuidString the UUID (as string) of the calling user
 	 * @param code       the room code
 	 * @param bodyString the request body
-	 * @return the updated game state (specific to the calling user) or {@code null} if the game couldn't be updated
+	 * @return the updated room with state (specific to the calling user) or {@code null} if the room state couldn't be updated
 	 */
 	@Nullable
 	@PostMapping("/update")
-	public AbstractGameState<?> update(@RequestHeader(AuthenticationFilter.UUID_HEADER) String uuidString, @RequestParam(value = "code") String code, @RequestBody String bodyString) {
+	public Room update(@RequestHeader(AuthenticationFilter.UUID_HEADER) String uuidString, @RequestParam(value = "code") String code, @RequestBody String bodyString) {
 		return getPlayerAndRoom(uuidString, code, (player, room) -> {
 			GameStateHelper.processAndUpdateState(player, room, bodyString);
 			final Room newRoom = roomRepository.save(room);
-			broadcastRoomUpdate(player, newRoom, SocketUpdateType.STATE);
-			return GameStateHelper.getStateForPlayer(player, newRoom);
+			broadcastRoomUpdate(player, newRoom);
+			return GameStateHelper.getRoomWithStateForPlayer(player, newRoom);
 		});
-	}
-
-	/**
-	 * Get the game state. The response is specific to the calling user.
-	 *
-	 * @param uuidString the UUID (as string) of the calling user
-	 * @param code       the room code
-	 * @return the game state (specific to the calling user) or {@code null} if the game state couldn't be fetched
-	 */
-	@Nullable
-	@PostMapping("/getState")
-	public AbstractGameState<?> getState(@RequestHeader(AuthenticationFilter.UUID_HEADER) String uuidString, @RequestParam(value = "code") String code) {
-		return getPlayerAndRoom(uuidString, code, GameStateHelper::getStateForPlayer);
 	}
 
 	@Nullable
@@ -181,12 +181,10 @@ public final class SecuredRestController {
 		return room == null ? null : getPlayer(uuidString, player -> callback.apply(player, room));
 	}
 
-	private void broadcastRoomUpdate(@Nullable Player player, Room room, SocketUpdateType socketUpdateType) {
-		messagingTemplate.convertAndSend("/topic/" + room.getCode(), new SocketUpdate(socketUpdateType, player == null ? null : player.getUuid()));
+	private void broadcastRoomUpdate(@Nullable Player player, Room room) {
+		messagingTemplate.convertAndSend("/topic/" + room.getCode(), new SocketUpdate(player == null ? null : player.getUuid()));
 	}
 
-	private enum SocketUpdateType {ROOM, STATE}
-
-	private record SocketUpdate(SocketUpdateType socketUpdateType, @Nullable UUID sender) {
+	private record SocketUpdate(@Nullable UUID sender) {
 	}
 }

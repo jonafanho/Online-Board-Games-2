@@ -1,0 +1,17 @@
+{
+	"quests": {
+		"array": true,
+		"type": "Quest"
+	},
+	"voteTrack": {
+		"type": "integer"
+	},
+	"players": {
+		"array": true,
+		"type": "Player"
+	},
+	"ladyChain": {
+		"array": true,
+		"type": "uuid"
+	}
+}

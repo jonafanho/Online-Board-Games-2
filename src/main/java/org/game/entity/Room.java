@@ -3,12 +3,14 @@ package org.game.entity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
 import lombok.Getter;
+import org.game.core.AbstractClientState;
 import org.game.core.AbstractGameState;
+import org.game.core.AbstractRequest;
 import org.game.core.GameStateHelper;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.lang.Nullable;
 
 import java.util.HashSet;
 import java.util.Locale;
@@ -21,6 +23,7 @@ public final class Room extends AbstractEntity {
 
 	private static final long MIN_CODE = Long.parseLong("100000", Character.MAX_RADIX);
 	private static final long MAX_CODE = Long.parseLong("ZZZZZZ", Character.MAX_RADIX);
+	private static final String EMPTY_JSON = "{}";
 
 	@Id
 	@Column(length = 6)
@@ -29,8 +32,8 @@ public final class Room extends AbstractEntity {
 	@Column(nullable = false)
 	private String game;
 
-	@Getter(AccessLevel.NONE)
 	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(nullable = false)
 	private String state;
 
 	@ManyToOne
@@ -54,35 +57,32 @@ public final class Room extends AbstractEntity {
 		try {
 			state = new ObjectMapper().writeValueAsString(GameStateHelper.create(game));
 		} catch (JsonProcessingException ignored) {
+			state = EMPTY_JSON;
 		}
 	}
 
-	public Room(Room room) {
+	public Room(Room room, @Nullable String newState) {
 		code = room.code;
 		game = room.game;
-		state = room.state;
+		state = newState == null ? EMPTY_JSON : newState;
 		host = room.host;
 		players.addAll(room.players);
 	}
 
-	public <T extends AbstractGameState<U>, U> void processAndUpdateState(Class<T> gameStateClass, Class<U> requestBodyClass, Player player, String bodyString) {
-		if (state == null) {
-			state = "{}";
-		}
-
+	public <W extends AbstractGameState<T, U, V>, T extends Enum<T>, U extends AbstractRequest, V extends AbstractClientState<T>> void processAndUpdateState(Class<W> gameStateClass, Class<U> requestClass, Player player, String bodyString) {
 		try {
-			final T gameState = new ObjectMapper().readValue(state, gameStateClass);
-			gameState.process(player, new ObjectMapper().readValue(bodyString, requestBodyClass));
+			final W gameState = new ObjectMapper().readValue(state, gameStateClass);
+			gameState.process(player, new ObjectMapper().readValue(bodyString, requestClass));
 			state = new ObjectMapper().writeValueAsString(gameState);
 		} catch (JsonProcessingException ignored) {
 		}
 	}
 
-	public <T extends AbstractGameState<U>, U> AbstractGameState<?> getStateForPlayer(Class<T> gameStateClass, Player player) {
+	public <W extends AbstractGameState<T, U, V>, T extends Enum<T>, U extends AbstractRequest, V extends AbstractClientState<T>> Room getRoomWithStateForPlayer(Class<W> gameStateClass, Player player) {
 		try {
-			return new ObjectMapper().readValue(state, gameStateClass).getStateForPlayer(player);
+			return new Room(this, new ObjectMapper().writeValueAsString(new ObjectMapper().readValue(state, gameStateClass).getStateForPlayer(player)));
 		} catch (JsonProcessingException ignored) {
-			return null;
+			return new Room(this, null);
 		}
 	}
 

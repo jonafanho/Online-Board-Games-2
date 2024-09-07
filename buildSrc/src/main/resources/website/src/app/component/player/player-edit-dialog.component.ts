@@ -4,9 +4,9 @@ import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {MatButtonModule} from "@angular/material/button";
 import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatDialogModule, MatDialogRef} from "@angular/material/dialog";
-import {PlayerService} from "../../service/player.service";
 import {MatButtonToggleModule} from "@angular/material/button-toggle";
 import {MatIconModule} from "@angular/material/icon";
+import {DataService} from "../../service/data.service";
 
 const ICONS = [
 	"person", "group", "face_1", "face_2", "face_3", "face_4", "face_5", "face_6", "child_care", "support_agent",
@@ -40,15 +40,15 @@ export class PlayerEditDialogComponent {
 	protected readonly icons = ICONS;
 	private iconToggle;
 
-	constructor(private playerService: PlayerService) {
-		this.iconToggle = playerService.getPlayer().icon;
+	constructor(private dataService: DataService) {
+		this.iconToggle = dataService.getPlayer()?.icon ?? "";
 		if (!ICONS.some(iconSet => iconSet.includes(this.iconToggle))) {
 			this.iconToggle = DEFAULT_ICON;
 		}
 	}
 
 	getPlayerName() {
-		return this.playerService.getPlayer().name;
+		return this.dataService.getPlayer()?.name ?? "";
 	}
 
 	chooseIcon(icon: string) {
@@ -60,7 +60,7 @@ export class PlayerEditDialogComponent {
 	}
 
 	onUpdate(name: string) {
-		this.playerService.updateProfile(name, this.iconToggle);
+		this.dataService.updateProfile(name, this.iconToggle);
 		this.onCancel();
 	}
 

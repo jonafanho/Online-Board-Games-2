@@ -12,7 +12,7 @@ import {Router} from "@angular/router";
 import {MatTooltipModule} from "@angular/material/tooltip";
 import {Game} from "../../entity/game";
 import {MatChipsModule} from "@angular/material/chips";
-import {RoomService} from "../../service/room.service";
+import {DataService} from "../../service/data.service";
 
 @Component({
 	selector: "app-home",
@@ -38,7 +38,7 @@ export class HomeComponent {
 	protected filteredGames = Game.GAMES;
 	protected joinRoomDisabled = true;
 
-	constructor(private readonly roomService: RoomService, private readonly router: Router) {
+	constructor(private readonly dataService: DataService, private readonly router: Router) {
 	}
 
 	textChanged(newValue: string) {
@@ -59,6 +59,6 @@ export class HomeComponent {
 	}
 
 	onCreateRoom(game: string) {
-		this.roomService.createRoom(game, code => this.onJoinRoom(code));
+		this.dataService.createRoom(game, code => this.onJoinRoom(code));
 	}
 }

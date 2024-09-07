@@ -29,6 +29,9 @@ bin/
 *.DS_Store
 
 **/resources/static/
+generated
 game.ts
+game.component.html
+game.component.ts
 BaseGameProperties.java
 GameStateHelper.java
