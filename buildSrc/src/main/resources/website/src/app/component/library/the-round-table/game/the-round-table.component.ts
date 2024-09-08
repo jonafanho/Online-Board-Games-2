@@ -1,15 +1,15 @@
 import {Component} from "@angular/core";
-import {ClientState, Request, Stage} from "../../../entity/generated/bluff_elimination";
-import {DataService} from "../../../service/data.service";
+import {ClientState, Request, Stage} from "../../../../entity/generated/the_round_table";
+import {DataService} from "../../../../service/data.service";
 
 @Component({
-	selector: "game-bluff-elimination",
+	selector: "game-the-round-table",
 	standalone: true,
 	imports: [],
-	templateUrl: "./bluff-elimination.component.html",
-	styleUrl: "./bluff-elimination.component.css",
+	templateUrl: "./the-round-table.component.html",
+	styleUrl: "./the-round-table.component.css",
 })
-export class BluffEliminationComponent {
+export class TheRoundTableComponent {
 
 	constructor(private readonly dataService: DataService) {
 	}

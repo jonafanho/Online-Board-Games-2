@@ -33,5 +33,7 @@ generated
 game.ts
 game.component.html
 game.component.ts
+game-settings.component.html
+game-settings.component.ts
 BaseGameProperties.java
 GameStateHelper.java

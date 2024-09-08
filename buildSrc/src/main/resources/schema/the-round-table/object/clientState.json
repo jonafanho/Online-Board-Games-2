@@ -6,9 +6,9 @@
 	"voteTrack": {
 		"type": "integer"
 	},
-	"players": {
+	"playerDetails": {
 		"array": true,
-		"type": "Player"
+		"type": "PlayerDetails"
 	},
 	"ladyChain": {
 		"array": true,

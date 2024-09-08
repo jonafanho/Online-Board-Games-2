@@ -1,4 +1,4 @@
-import {DEFAULT_ICON} from "../component/player/player-edit-dialog.component";
+import {DEFAULT_ICON} from "../component/player-edit-dialog/player-edit-dialog.component";
 
 export class Player {
 

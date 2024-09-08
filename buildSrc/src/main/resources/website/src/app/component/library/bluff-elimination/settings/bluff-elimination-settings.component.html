@@ -1,0 +1,7 @@
+<form class="column gap" [formGroup]="settingsFormGroup">
+	<mat-radio-group class="column" aria-label="Characters" (change)="onChangeSettings()" formControlName="characterSet">
+		<mat-radio-button value="{{CharacterSet.WithAmbassador}}">With Ambassador</mat-radio-button>
+		<mat-radio-button value="{{CharacterSet.WithInquisitor}}">With Inquisitor</mat-radio-button>
+	</mat-radio-group>
+	<mat-checkbox (change)="onChangeSettings()" formControlName="revealCharacterOnElimination">Reveal character on elimination</mat-checkbox>
+</form>

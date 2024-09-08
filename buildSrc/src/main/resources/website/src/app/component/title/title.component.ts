@@ -19,6 +19,7 @@ import {MatTooltipModule} from "@angular/material/tooltip";
 export class TitleComponent {
 	@Input({required: true}) titleText = "";
 	@Input() descriptionText = "";
+	@Input() singleRow = false;
 	protected readonly showHomeButton;
 
 	constructor(private readonly router: Router) {

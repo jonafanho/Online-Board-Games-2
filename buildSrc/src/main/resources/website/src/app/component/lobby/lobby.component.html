@@ -1,4 +1,4 @@
-<app-title [titleText]="getGameTitle() + '&nbsp;'" [descriptionText]="getRoomCode() + '&nbsp;'">
+<app-title [titleText]="getGameTitle() + '&nbsp;'" [descriptionText]="getRoomCode() + '&nbsp;'" [singleRow]="isGameStarted() === true">
 	@switch (isGameStarted()) {
 		@case (true) {
 			<app-game/>
@@ -9,43 +9,58 @@
 					<mat-slide-toggle class="spacing" #joinToggle (change)="joinOrLeaveRoom(joinToggle.checked)" [checked]="getIsPlayerJoined()">Join this room</mat-slide-toggle>
 					<button mat-button (click)="editPlayerProfile()">Edit Profile</button>
 				</div>
-				<div class="column gap-small box wrapper">
-					<div class="row gap flow center">
-						<div class="row gap-small spacing center">
-							<h2>Players</h2>
-							<div>({{ getRoomPlayers().length }}/{{ getGameMaxPlayers() }})</div>
-						</div>
-						@if (isPlayerHost()) {
+				<div class="column gap box content">
+					<div class="row gap flow">
+						<h2 class="spacing">Settings</h2>
+						@if (isHost()) {
 							<div class="row gap-small center">
 								<button mat-flat-button (click)="startGame()" [disabled]="!isValidPlayerCount()">Start Game</button>
 								<button mat-button (click)="deleteRoom()" color="warn">Delete Room</button>
 							</div>
 						}
 					</div>
-					@if (getRoomPlayers().length > 0) {
-						<mat-list class="players">
-							@for (player of getRoomPlayers(); track [player.uuid, player.icon, player.formattedName]) {
-								<mat-list-item>
-									<div matListItemAvatar class="column center">
-										<div class="spacing"></div>
-										<mat-icon>{{ player.icon }}</mat-icon>
-										<div class="spacing"></div>
-									</div>
-									<div matListItemTitle>{{ player.formattedName }}</div>
-									<div matListItemLine>{{ getPlayerStatus(player.uuid) }}</div>
-									@if (canRemovePlayer(player.uuid)) {
-										<div matListItemMeta class="column center remove-player-button">
+					@if (!isHost()) {
+						<mat-card appearance="outlined">
+							<mat-card-content>
+								<div class="row gap-small center">
+									<mat-icon class="square">info</mat-icon>
+									<div>Only the host can change game settings.</div>
+								</div>
+							</mat-card-content>
+						</mat-card>
+					}
+					<app-game-settings/>
+					<mat-divider/>
+					<div class="column gap-small">
+						<div class="row gap-small center">
+							<h2>Players</h2>
+							<div>({{ getRoomPlayers().length }}/{{ getGameMaxPlayers() }})</div>
+						</div>
+						@if (getRoomPlayers().length > 0) {
+							<mat-list>
+								@for (player of getRoomPlayers(); track [player.uuid, player.icon, player.formattedName]) {
+									<mat-list-item>
+										<div matListItemAvatar class="column center">
 											<div class="spacing"></div>
-											<button mat-icon-button (click)="removePlayer(player.uuid)" matTooltip="Remove Player">
-												<mat-icon>close</mat-icon>
-											</button>
+											<mat-icon>{{ player.icon }}</mat-icon>
 											<div class="spacing"></div>
 										</div>
-									}
-								</mat-list-item>
-							}
-						</mat-list>
-					}
+										<div matListItemTitle>{{ player.formattedName }}</div>
+										<div matListItemLine>{{ getPlayerStatus(player.uuid) }}</div>
+										@if (canRemovePlayer(player.uuid)) {
+											<div matListItemMeta class="column center remove-player-button">
+												<div class="spacing"></div>
+												<button mat-icon-button (click)="removePlayer(player.uuid)" matTooltip="Remove Player">
+													<mat-icon>close</mat-icon>
+												</button>
+												<div class="spacing"></div>
+											</div>
+										}
+									</mat-list-item>
+								}
+							</mat-list>
+						}
+					</div>
 				</div>
 			</div>
 		}

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import lombok.Getter;
+import org.game.Main;
 import org.game.core.AbstractClientState;
 import org.game.core.AbstractGameState;
 import org.game.core.AbstractRequest;
@@ -56,7 +57,8 @@ public final class Room extends AbstractEntity {
 		this.host = host;
 		try {
 			state = new ObjectMapper().writeValueAsString(GameStateHelper.create(game));
-		} catch (JsonProcessingException ignored) {
+		} catch (JsonProcessingException e) {
+			Main.LOGGER.error("", e);
 			state = EMPTY_JSON;
 		}
 	}
@@ -69,19 +71,25 @@ public final class Room extends AbstractEntity {
 		players.addAll(room.players);
 	}
 
+	public boolean isHost(Player player) {
+		return host.getUuid().equals(player.getUuid());
+	}
+
 	public <W extends AbstractGameState<T, U, V>, T extends Enum<T>, U extends AbstractRequest, V extends AbstractClientState<T>> void processAndUpdateState(Class<W> gameStateClass, Class<U> requestClass, Player player, String bodyString) {
 		try {
 			final W gameState = new ObjectMapper().readValue(state, gameStateClass);
-			gameState.process(player, new ObjectMapper().readValue(bodyString, requestClass));
+			gameState.process(player, this, new ObjectMapper().readValue(bodyString, requestClass));
 			state = new ObjectMapper().writeValueAsString(gameState);
-		} catch (JsonProcessingException ignored) {
+		} catch (JsonProcessingException e) {
+			Main.LOGGER.error("", e);
 		}
 	}
 
 	public <W extends AbstractGameState<T, U, V>, T extends Enum<T>, U extends AbstractRequest, V extends AbstractClientState<T>> Room getRoomWithStateForPlayer(Class<W> gameStateClass, Player player) {
 		try {
 			return new Room(this, new ObjectMapper().writeValueAsString(new ObjectMapper().readValue(state, gameStateClass).getStateForPlayer(player)));
-		} catch (JsonProcessingException ignored) {
+		} catch (JsonProcessingException e) {
+			Main.LOGGER.error("", e);
 			return new Room(this, null);
 		}
 	}

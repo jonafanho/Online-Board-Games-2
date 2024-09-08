@@ -1,4 +1,4 @@
-import {Injectable} from "@angular/core";
+import {EventEmitter, Injectable, Output} from "@angular/core";
 import {HttpClient} from "@angular/common/http";
 import {CookieService} from "ngx-cookie-service";
 import {Player} from "../entity/player";
@@ -18,6 +18,7 @@ const BASE_URL = `${document.location.protocol}//${HOST}`;
 
 @Injectable({providedIn: "root"})
 export class DataService {
+	@Output() roomUpdated = new EventEmitter<void>();
 	private player?: Player;
 	private token?: string;
 	private room?: Room;
@@ -125,8 +126,15 @@ export class DataService {
 		if (this.room) {
 			const hostUuid = this.room.host.uuid;
 			this.room.players.sort((player1, player2) => (hostUuid == player1.uuid ? "" : player1.formattedName).localeCompare(hostUuid == player2.uuid ? "" : player2.formattedName));
+			this.roomUpdated.emit();
 		} else {
 			this.router.navigate([""]).then();
 		}
+	}
+
+	// Misc methods
+
+	public isHost() {
+		return this.room && this.room.host.uuid == this.player?.uuid;
 	}
 }

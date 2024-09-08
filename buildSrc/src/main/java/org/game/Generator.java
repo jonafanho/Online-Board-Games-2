@@ -28,7 +28,10 @@ public final class Generator {
 		final List<String> gameStates3 = new ArrayList<>();
 		final StringBuilder stringBuilderGameComponentHtml = new StringBuilder("@switch(getGame()){\n");
 		final StringBuilder stringBuilderGameComponentTs = new StringBuilder("import{Component}from'@angular/core';import{DataService}from'../../service/data.service';");
+		final StringBuilder stringBuilderGameSettingsComponentHtml = new StringBuilder("@switch(getGame()){\n");
+		final StringBuilder stringBuilderGameSettingsComponentTs = new StringBuilder("import{Component}from'@angular/core';import{DataService}from'../../service/data.service';");
 		final List<String> gameImports = new ArrayList<>();
+		final List<String> gameImportsSettings = new ArrayList<>();
 
 		iterateFolder(project.getRootDir().toPath().resolve("buildSrc/src/main/resources/schema"), gamePath -> {
 			final String id = gamePath.getFileName().toString();
@@ -69,8 +72,11 @@ public final class Generator {
 						gameStates3.add(String.format("case\"%1$s\"->room.getRoomWithStateForPlayer(org.game.library.%2$s.GameState.class,player);\n", id, idSnake));
 
 						stringBuilderGameComponentHtml.append(String.format("@case('%1$s'){<game-%1$s/>}\n", id));
-						stringBuilderGameComponentTs.append(String.format("import{%1$sComponent}from'../library/%2$s/%2$s.component';", idPascal, id));
+						stringBuilderGameComponentTs.append(String.format("import{%1$sComponent}from'../library/%2$s/game/%2$s.component';", idPascal, id));
+						stringBuilderGameSettingsComponentHtml.append(String.format("@case('%1$s'){<game-settings-%1$s/>}\n", id));
+						stringBuilderGameSettingsComponentTs.append(String.format("import{%1$sSettingsComponent}from'../library/%2$s/settings/%2$s-settings.component';", idPascal, id));
 						gameImports.add(String.format("%sComponent", idPascal));
+						gameImportsSettings.add(String.format("%sSettingsComponent", idPascal));
 
 						final StringBuilder stringBuilder = new StringBuilder(String.format("package org.game.library.%s;public interface BaseGameProperties{\n", idSnake));
 						stringBuilder.append(String.format("String GAME_TITLE=\"%s\";\n", title));
@@ -117,7 +123,7 @@ public final class Generator {
 								final List<String> parameters = new ArrayList<>();
 
 								jsonObjectFields.keySet().forEach(fieldName -> {
-									final String fieldType = getJavaField(jsonObjectFields, fieldName, isClientState);
+									final String fieldType = getJavaField(jsonObjectFields, fieldName, true);
 									stringBuilderJava.append(String.format(";public final %s", fieldType));
 									parameters.add(fieldType);
 									stringBuilderAssignments.append(String.format("this.%1$s=%1$s;", fieldName));
@@ -135,14 +141,14 @@ public final class Generator {
 								final StringBuilder stringBuilderParametersTypeScript = new StringBuilder();
 
 								jsonObject.keySet().forEach(parameterName -> {
-									final String field = getJavaField(jsonObject, parameterName, isClientState);
+									final String field = getJavaField(jsonObject, parameterName, !isRequest);
 									parametersJava.add(field);
 									stringBuilderFieldsJava.append(String.format("public final %s;", field));
 									stringBuilderParametersTypeScript.append(getTypeScriptField(jsonObject, parameterName, isClientState));
 								});
 
 								if (isRequest) {
-									textJava = String.format("package org.game.library.%s.generated;@lombok.RequiredArgsConstructor public final class %s extends org.game.core.AbstractRequest{%s}", idSnake, name, stringBuilderFieldsJava);
+									textJava = String.format("package org.game.library.%s.generated;@lombok.NoArgsConstructor(force=true)public final class %s extends org.game.core.AbstractRequest{%s}", idSnake, name, stringBuilderFieldsJava);
 								} else if (isClientState) {
 									textJava = String.format("package org.game.library.%s.generated;@lombok.RequiredArgsConstructor public final class %s extends org.game.core.AbstractClientState<Stage>{%s@org.springframework.lang.NonNull @Override protected Stage getDefaultStage(){return Stage.LOBBY;}}", idSnake, name, stringBuilderFieldsJava);
 								} else {
@@ -205,6 +211,14 @@ public final class Generator {
 
 		writeFile(project.getRootDir().toPath().resolve("buildSrc/src/main/resources/website/src/app/component/game/game.component.html"), stringBuilderGameComponentHtml);
 		writeFile(project.getRootDir().toPath().resolve("buildSrc/src/main/resources/website/src/app/component/game/game.component.ts"), stringBuilderGameComponentTs);
+
+		stringBuilderGameSettingsComponentHtml.append("}");
+		stringBuilderGameSettingsComponentTs.append("@Component({selector:'app-game-settings',standalone:true,imports:[").append(String.join(",", gameImportsSettings));
+		stringBuilderGameSettingsComponentTs.append("],templateUrl:'./game-settings.component.html',styleUrl:'./game-settings.component.css',})");
+		stringBuilderGameSettingsComponentTs.append("export class GameSettingsComponent{constructor(private readonly dataService:DataService){}protected getGame(){return this.dataService.getRoom()?.game??'';}}");
+
+		writeFile(project.getRootDir().toPath().resolve("buildSrc/src/main/resources/website/src/app/component/game-settings/game-settings.component.html"), stringBuilderGameSettingsComponentHtml);
+		writeFile(project.getRootDir().toPath().resolve("buildSrc/src/main/resources/website/src/app/component/game-settings/game-settings.component.ts"), stringBuilderGameSettingsComponentTs);
 	}
 
 	private static void iterateFolder(Path path, Consumer<Path> callback) {
@@ -265,7 +279,7 @@ public final class Generator {
 			case "uuid" -> "java.util.UUID";
 			default -> capitalizeFirstLetter(rawType);
 		};
-		return String.format("%s%s %s", requiredField ? "@org.springframework.lang.NonNull " : "", getJsonOptionalBooleanField(fieldDetails, "array") ? String.format("java.util.List<%s>", type) : type, key);
+		return String.format("@org.springframework.lang.%s %s %s", requiredField ? "NonNull" : "Nullable", getJsonOptionalBooleanField(fieldDetails, "array") ? String.format("java.util.List<%s>", type) : type, key);
 	}
 
 	private static String getTypeScriptField(JsonObject jsonObject, String key, boolean requiredField) {

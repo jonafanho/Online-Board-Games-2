@@ -6,6 +6,10 @@
 	overflow-y: hidden;
 }
 
-.players {
+.content {
 	overflow-y: auto;
+}
+
+.square {
+	min-width: 1em;
 }

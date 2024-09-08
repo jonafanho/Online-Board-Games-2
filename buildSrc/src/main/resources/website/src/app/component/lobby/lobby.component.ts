@@ -5,7 +5,7 @@ import {MatIconModule} from "@angular/material/icon";
 import {MatInputModule} from "@angular/material/input";
 import {MatButtonModule} from "@angular/material/button";
 import {MatDialog} from "@angular/material/dialog";
-import {PlayerEditDialogComponent} from "../player/player-edit-dialog.component";
+import {PlayerEditDialogComponent} from "../player-edit-dialog/player-edit-dialog.component";
 import {MatSlideToggleModule} from "@angular/material/slide-toggle";
 import {RouterLink} from "@angular/router";
 import {MatListModule} from "@angular/material/list";
@@ -13,6 +13,8 @@ import {MatTooltipModule} from "@angular/material/tooltip";
 import {BaseRequest} from "../../entity/base-request";
 import {GameComponent} from "../game/game.component";
 import {DataService} from "../../service/data.service";
+import {GameSettingsComponent} from "../game-settings/game-settings.component";
+import {MatCardModule} from "@angular/material/card";
 
 @Component({
 	selector: "app-lobby",
@@ -28,6 +30,8 @@ import {DataService} from "../../service/data.service";
 		MatListModule,
 		MatTooltipModule,
 		GameComponent,
+		GameSettingsComponent,
+		MatCardModule,
 	],
 	templateUrl: "./lobby.component.html",
 	styleUrl: "./lobby.component.css",
@@ -54,16 +58,16 @@ export class LobbyComponent {
 		return this.dataService.getRoom()?.players ?? [];
 	}
 
-	isPlayerHost() {
-		return this.isHost(this.dataService.getPlayer()?.uuid ?? "");
+	isHost() {
+		return this.dataService.isHost();
 	}
 
 	canRemovePlayer(uuid: string) {
-		return this.isPlayerHost() && this.dataService.getPlayer()?.uuid != uuid;
+		return this.dataService.isHost() && this.dataService.getPlayer()?.uuid != uuid;
 	}
 
 	getPlayerStatus(uuid: string) {
-		return this.isHost(uuid) ? "Host" : "Player";
+		return this.dataService.getRoom()?.host.uuid == uuid ? "Host" : "Player";
 	}
 
 	getGameMaxPlayers() {
@@ -104,9 +108,5 @@ export class LobbyComponent {
 
 	editPlayerProfile() {
 		this.dialog.open(PlayerEditDialogComponent);
-	}
-
-	private isHost(uuid: string) {
-		return uuid && this.dataService.getRoom()?.host.uuid == uuid;
 	}
 }

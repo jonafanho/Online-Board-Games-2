@@ -1,15 +1,15 @@
 import {Component} from "@angular/core";
-import {ClientState, Request, Stage} from "../../../entity/generated/the_round_table";
-import {DataService} from "../../../service/data.service";
+import {ClientState, Request, Stage} from "../../../../entity/generated/the_round_table";
+import {DataService} from "../../../../service/data.service";
 
 @Component({
-	selector: "game-the-round-table",
+	selector: "game-settings-the-round-table",
 	standalone: true,
 	imports: [],
-	templateUrl: "./the-round-table.component.html",
-	styleUrl: "./the-round-table.component.css",
+	templateUrl: "./the-round-table-settings.component.html",
+	styleUrl: "./the-round-table-settings.component.css",
 })
-export class TheRoundTableComponent {
+export class TheRoundTableSettingsComponent {
 
 	constructor(private readonly dataService: DataService) {
 	}

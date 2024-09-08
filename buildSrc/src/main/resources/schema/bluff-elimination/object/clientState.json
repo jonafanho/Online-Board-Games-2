@@ -1,2 +1,12 @@
 {
+	"characterSet": {
+		"type": "CharacterSet"
+	},
+	"revealCharacterOnElimination": {
+		"type": "boolean"
+	},
+	"playerDetails": {
+		"array": true,
+		"type": "PlayerDetails"
+	}
 }

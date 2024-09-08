@@ -41,7 +41,7 @@ public final class SecuredRestController {
 	@Nullable
 	@GetMapping("/createRoom")
 	public Room createRoom(@RequestHeader(AuthenticationFilter.UUID_HEADER) String uuidString, @RequestParam(value = "game") String game) {
-		return getPlayer(uuidString, player -> roomRepository.save(new Room(game, player)));
+		return getPlayer(uuidString, player -> GameStateHelper.getRoomWithStateForPlayer(player, roomRepository.save(new Room(game, player))));
 	}
 
 	/**
@@ -55,7 +55,7 @@ public final class SecuredRestController {
 	@GetMapping("/deleteRoom")
 	public Room deleteRoom(@RequestHeader(AuthenticationFilter.UUID_HEADER) String uuidString, @RequestParam(value = "code") String code) {
 		return getPlayerAndRoom(uuidString, code, (player, room) -> {
-			if (room.getHost().getUuid().equals(player.getUuid())) {
+			if (room.isHost(player)) {
 				final Room deletedRoom = new Room(room, null);
 				roomRepository.delete(room);
 				broadcastRoomUpdate(player, deletedRoom);
@@ -108,7 +108,7 @@ public final class SecuredRestController {
 			room.getPlayers().add(player);
 			final Room newRoom = roomRepository.save(room);
 			broadcastRoomUpdate(player, newRoom);
-			return newRoom;
+			return GameStateHelper.getRoomWithStateForPlayer(player, newRoom);
 		});
 	}
 
@@ -124,11 +124,11 @@ public final class SecuredRestController {
 	@GetMapping("/leaveRoom")
 	public Room leaveRoom(@RequestHeader(AuthenticationFilter.UUID_HEADER) String uuidString, @RequestParam(value = "code") String code, @RequestParam(value = "playerUuid") String playerUuidString) {
 		return getPlayer(uuidString, player -> getPlayerAndRoom(playerUuidString, code, (playerToRemove, room) -> {
-			if (uuidString.equals(playerUuidString) || room.getHost().getUuid().equals(player.getUuid())) {
+			if (uuidString.equals(playerUuidString) || room.isHost(player)) {
 				room.getPlayers().remove(playerToRemove);
 				final Room newRoom = roomRepository.save(room);
 				broadcastRoomUpdate(player, newRoom);
-				return newRoom;
+				return GameStateHelper.getRoomWithStateForPlayer(player, newRoom);
 			} else {
 				return null;
 			}
