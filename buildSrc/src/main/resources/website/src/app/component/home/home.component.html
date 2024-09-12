@@ -22,7 +22,7 @@
 				</mat-form-field>
 				@if (filteredGames.length > 0) {
 					<div class="column gap games">
-						@for (game of filteredGames; track game) {
+						@for (game of filteredGames; track $index) {
 							<mat-card appearance="outlined">
 								<mat-card-header>
 									<mat-card-title>{{ game.title }}</mat-card-title>
@@ -33,7 +33,7 @@
 								<mat-card-footer class="card-footer">
 									<div class="row gap">
 										<mat-chip-set class="spacing" aria-label="Tags">
-											@for (tag of game.tags; track tag) {
+											@for (tag of game.tags; track $index) {
 												<mat-chip>{{ tag }}</mat-chip>
 											}
 										</mat-chip-set>

@@ -15,14 +15,9 @@ html, body {
 	height: 100%;
 }
 
-mat-spinner, mat-checkbox {
-	filter: grayscale(1);
-}
-
 .box {
 	background-color: #7777770F;
 	box-sizing: border-box;
-	height: 100%;
 	padding: 1em;
 }
 

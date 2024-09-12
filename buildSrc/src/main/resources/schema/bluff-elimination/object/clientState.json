@@ -2,11 +2,35 @@
 	"characterSet": {
 		"type": "CharacterSet"
 	},
+	"startingCardsPerPlayer": {
+		"type": "integer"
+	},
+	"startingCoinsPerPlayer": {
+		"type": "integer"
+	},
+	"enableTeams": {
+		"type": "boolean"
+	},
 	"revealCharacterOnElimination": {
 		"type": "boolean"
 	},
 	"playerDetails": {
 		"array": true,
 		"type": "PlayerDetails"
+	},
+	"currentTurnPlayerIndex": {
+		"type": "integer"
+	},
+	"currentPlayActions": {
+		"array": true,
+		"type": "PlayAction"
+	},
+	"waitingForPlayers": {
+		"array": true,
+		"type": "waitingForPlayer"
+	},
+	"history": {
+		"array": true,
+		"type": "TurnHistory"
 	}
 }

@@ -2,11 +2,11 @@
 	box-sizing: border-box;
 	height: 100%;
 	margin: 0 auto;
-	padding: 2em;
+	padding: 4em;
 }
 
-@media (min-width: 480px) {
+@media (max-width: 480px) {
 	.content {
-		padding: 4em;
+		padding: 2em;
 	}
 }

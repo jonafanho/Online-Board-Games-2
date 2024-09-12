@@ -6,7 +6,7 @@ import {Room} from "../entity/room";
 import {Game} from "../entity/game";
 import {Router} from "@angular/router";
 import {Socket} from "../tool/socket";
-import {Observable} from "rxjs";
+import {catchError, Observable, throwError} from "rxjs";
 import {BaseRequest} from "../entity/base-request";
 import {BaseClientState} from "../entity/base-client-state";
 
@@ -27,8 +27,13 @@ export class DataService {
 	private isGameStarted?: boolean;
 
 	private readonly runRequest = <T>(request: (headers: object) => Observable<T>, onSuccess?: (value: T) => void, onNull?: () => void) => {
-		if (this.token && this.player) {
-			request({headers: {uuid: this.player.uuid, token: this.token}}).subscribe(data => {
+		if (this.player && this.token) {
+			request({headers: {uuid: this.player.uuid, token: this.token}}).pipe<T>(catchError(error => {
+				this.player = undefined;
+				this.token = undefined;
+				this.runRequest(request, onSuccess, onNull);
+				return throwError(() => error);
+			})).subscribe(data => {
 				if (data) {
 					if (onSuccess) {
 						onSuccess(data);
@@ -39,21 +44,23 @@ export class DataService {
 					}
 				}
 			});
+		} else {
+			this.httpClient.get<{ uuid: string, token: string }>(`${BASE_URL}/api/public/register?uuid=${this.cookieService.get(PLAYER_UUID_COOKIE)}&token=${this.cookieService.get(PLAYER_TOKEN_COOKIE)}`).subscribe(({uuid, token}) => {
+				this.cookieService.set(PLAYER_UUID_COOKIE, uuid, COOKIE_OPTIONS);
+				this.cookieService.set(PLAYER_TOKEN_COOKIE, token, COOKIE_OPTIONS);
+				this.token = token;
+				this.httpClient.get<Player>(`${BASE_URL}/api/public/getPlayer?playerUuid=${uuid}`).subscribe(player => {
+					this.updatePlayer(player);
+					this.runRequest(request, onSuccess, onNull);
+				});
+			});
 		}
 	};
 	private readonly getRequest = <T>(url: string, onSuccess?: (value: T) => void, onNull?: () => void) => this.runRequest(headers => this.httpClient.get<T>(`${BASE_URL}${url}`, headers), onSuccess, onNull);
 	private readonly postRequest = <T>(url: string, requestBody: T, onSuccess?: (value: Room) => void, onNull?: () => void) => this.runRequest(headers => this.httpClient.post<Room>(`${BASE_URL}${url}`, requestBody, headers), onSuccess, onNull);
 
 	protected constructor(private readonly cookieService: CookieService, private readonly httpClient: HttpClient, private readonly router: Router) {
-		this.httpClient.get<{ uuid: string, token: string }>(`${BASE_URL}/api/public/register?uuid=${cookieService.get(PLAYER_UUID_COOKIE)}&token=${cookieService.get(PLAYER_TOKEN_COOKIE)}`).subscribe(({uuid, token}) => {
-			this.cookieService.set(PLAYER_UUID_COOKIE, uuid, COOKIE_OPTIONS);
-			this.cookieService.set(PLAYER_TOKEN_COOKIE, token, COOKIE_OPTIONS);
-			this.token = token;
-			this.httpClient.get<Player>(`${BASE_URL}/api/public/getPlayer?playerUuid=${uuid}`).subscribe(player => {
-				this.updatePlayer(player);
-				new Socket(HOST, roomCode => this.getRequest<Room>(`/api/secured/getRoom?code=${roomCode}`, room => this.updateRoom(room), () => this.updateRoom(undefined)), () => this.updateRoom(undefined), this, this.router);
-			});
-		});
+		new Socket(HOST, roomCode => this.getRequest<Room>(`/api/secured/getRoom?code=${roomCode}`, room => this.updateRoom(room), () => this.updateRoom(undefined)), () => this.updateRoom(undefined), this, this.router);
 	}
 
 	// Player operations

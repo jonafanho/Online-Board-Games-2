@@ -1,0 +1,22 @@
+{
+	"values": {
+		"Income": [],
+		"ForeignAid": [],
+		"Eliminate": [],
+		"Tax": [],
+		"Assassinate": [],
+		"Steal": [],
+		"ExchangeAmbassador": [],
+		"ExchangeInquisitor": [],
+		"Peek": [],
+		"BlockForeignAid": [],
+		"BlockAssassination": [],
+		"BlockStealingCaptain": [],
+		"BlockStealingAmbassador": [],
+		"BlockStealingInquisitor": [],
+		"Challenge": [],
+		"Elimination": []
+	},
+	"fields": {
+	}
+}

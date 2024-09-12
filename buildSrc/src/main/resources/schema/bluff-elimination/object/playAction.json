@@ -1,0 +1,15 @@
+{
+	"sender": {
+		"type": "uuid"
+	},
+	"action": {
+		"type": "Action"
+	},
+	"target": {
+		"optional": true,
+		"type": "uuid"
+	},
+	"hasBeenChallenged": {
+		"type": "boolean"
+	}
+}

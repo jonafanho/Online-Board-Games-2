@@ -5,7 +5,29 @@
 	"characterSet": {
 		"type": "CharacterSet"
 	},
+	"startingCardsPerPlayer": {
+		"type": "integer"
+	},
+	"startingCoinsPerPlayer": {
+		"type": "integer"
+	},
+	"enableTeams": {
+		"type": "boolean"
+	},
 	"revealCharacterOnElimination": {
 		"type": "boolean"
+	},
+	"playAction": {
+		"type": "PlayActionRequest"
+	},
+	"challenge": {
+		"type": "boolean"
+	},
+	"accept": {
+		"type": "boolean"
+	},
+	"selectCharacters": {
+		"array": true,
+		"type": "Character"
 	}
 }

@@ -6,7 +6,7 @@
 			<input matInput type="search" aria-label="Player Name" #nameInput [value]="getPlayerName()" autocomplete="false" spellcheck="false"/>
 		</mat-form-field>
 		<div class="flow icons">
-			@for (icon of icons; track icon) {
+			@for (icon of icons; track $index) {
 				<button mat-icon-button [class]="getSelectedIconColor(icon)" (click)="chooseIcon(icon)" [color]="getSelectedIconColor(icon)">
 					<mat-icon>{{ icon }}</mat-icon>
 				</button>

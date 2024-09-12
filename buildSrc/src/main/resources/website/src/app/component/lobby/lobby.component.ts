@@ -8,13 +8,15 @@ import {MatDialog} from "@angular/material/dialog";
 import {PlayerEditDialogComponent} from "../player-edit-dialog/player-edit-dialog.component";
 import {MatSlideToggleModule} from "@angular/material/slide-toggle";
 import {RouterLink} from "@angular/router";
-import {MatListModule} from "@angular/material/list";
 import {MatTooltipModule} from "@angular/material/tooltip";
 import {BaseRequest} from "../../entity/base-request";
 import {GameComponent} from "../game/game.component";
 import {DataService} from "../../service/data.service";
 import {GameSettingsComponent} from "../game-settings/game-settings.component";
 import {MatCardModule} from "@angular/material/card";
+import {InfoCardComponent} from "../info-card/info-card.component";
+import {PlayerCardComponent} from "../player-card/player-card.component";
+import {MatDividerModule} from "@angular/material/divider";
 
 @Component({
 	selector: "app-lobby",
@@ -27,11 +29,13 @@ import {MatCardModule} from "@angular/material/card";
 		MatButtonModule,
 		MatSlideToggleModule,
 		RouterLink,
-		MatListModule,
+		MatDividerModule,
 		MatTooltipModule,
 		GameComponent,
 		GameSettingsComponent,
 		MatCardModule,
+		InfoCardComponent,
+		PlayerCardComponent,
 	],
 	templateUrl: "./lobby.component.html",
 	styleUrl: "./lobby.component.css",

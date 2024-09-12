@@ -1,0 +1,8 @@
+{
+	"uuid": {
+		"type": "uuid"
+	},
+	"eliminate": {
+		"type": "integer"
+	}
+}

@@ -108,11 +108,13 @@ public final class Generator {
 								if (isStage) {
 									values.add("/**The default stage when the game hasn't started yet**/LOBBY()");
 									stringBuilderValuesTypeScript.append("Lobby='LOBBY',");
+									values.add("/**The last stage for when the game ends**/END()");
+									stringBuilderValuesTypeScript.append("End='END',");
 								}
 
 								jsonObjectValues.keySet().forEach(key -> {
 									final List<String> parameters = new ArrayList<>();
-									jsonObjectValues.getAsJsonArray(key).forEach(value -> parameters.add(value.toString()));
+									jsonObjectValues.getAsJsonArray(key).forEach(value -> parameters.add(value.isJsonNull() ? "null" : value.getAsString()));
 									values.add(String.format("%s(%s)", toEnumCase(key), String.join(",", parameters)));
 									stringBuilderValuesTypeScript.append(String.format("%s='%s',", capitalizeFirstLetter(key), toEnumCase(key)));
 								});
@@ -144,7 +146,7 @@ public final class Generator {
 									final String field = getJavaField(jsonObject, parameterName, !isRequest);
 									parametersJava.add(field);
 									stringBuilderFieldsJava.append(String.format("public final %s;", field));
-									stringBuilderParametersTypeScript.append(getTypeScriptField(jsonObject, parameterName, isClientState));
+									stringBuilderParametersTypeScript.append(getTypeScriptField(jsonObject, parameterName, !isRequest));
 								});
 
 								if (isRequest) {
@@ -279,7 +281,7 @@ public final class Generator {
 			case "uuid" -> "java.util.UUID";
 			default -> capitalizeFirstLetter(rawType);
 		};
-		return String.format("@org.springframework.lang.%s %s %s", requiredField ? "NonNull" : "Nullable", getJsonOptionalBooleanField(fieldDetails, "array") ? String.format("java.util.List<%s>", type) : type, key);
+		return String.format("@org.springframework.lang.%s %s %s", requiredField && !getJsonOptionalBooleanField(fieldDetails, "optional") ? "NonNull" : "Nullable", getJsonOptionalBooleanField(fieldDetails, "array") ? String.format("java.util.List<%s>", type) : type, key);
 	}
 
 	private static String getTypeScriptField(JsonObject jsonObject, String key, boolean requiredField) {
@@ -291,7 +293,7 @@ public final class Generator {
 			case "uuid" -> "string";
 			default -> capitalizeFirstLetter(rawType);
 		};
-		return String.format("readonly %s%s:%s%s;", key, requiredField ? "" : "?", type, getJsonOptionalBooleanField(fieldDetails, "array") ? "[]" : "");
+		return String.format("readonly %s%s:%s%s;", key, requiredField && !getJsonOptionalBooleanField(fieldDetails, "optional") ? "" : "?", type, getJsonOptionalBooleanField(fieldDetails, "array") ? "[]" : "");
 	}
 
 	private static String getTypeScriptListFromJsonArray(JsonArray jsonArray) {

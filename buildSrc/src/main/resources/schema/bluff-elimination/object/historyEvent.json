@@ -1,9 +1,13 @@
 {
-	"uuid": {
+	"sender": {
 		"type": "uuid"
 	},
-	"coins": {
-		"type": "integer"
+	"event": {
+		"type": "Event"
+	},
+	"target": {
+		"optional": true,
+		"type": "uuid"
 	},
 	"visibleCharacters": {
 		"array": true,

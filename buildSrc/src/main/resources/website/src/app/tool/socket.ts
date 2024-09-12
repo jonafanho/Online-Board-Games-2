@@ -23,11 +23,13 @@ export class Socket {
 			const roomCode = pathSplit[pathSplit.length - 1];
 
 			if (roomCode) {
-				this.stompSubscription = client.subscribe(`/topic/${roomCode}`, ({body}) => {
-					if ((JSON.parse(body) as { sender: string }).sender != dataService.getPlayer()?.uuid) {
-						getRoomUpdate(roomCode);
-					}
-				});
+				if (client.connected) {
+					this.stompSubscription = client.subscribe(`/topic/${roomCode}`, ({body}) => {
+						if ((JSON.parse(body) as { sender: string }).sender != dataService.getPlayer()?.uuid) {
+							getRoomUpdate(roomCode);
+						}
+					});
+				}
 
 				if (roomCode != dataService.getRoom()?.code) {
 					getRoomUpdate(roomCode);

@@ -1,15 +1,9 @@
-.remove-player-button::before {
-	height: 16px !important;
-}
-
 .wrapper {
+	width: 100%;
+	height: 100%;
 	overflow-y: hidden;
 }
 
 .content {
 	overflow-y: auto;
-}
-
-.square {
-	min-width: 1em;
 }
