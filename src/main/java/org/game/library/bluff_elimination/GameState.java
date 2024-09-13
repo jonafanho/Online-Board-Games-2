@@ -54,7 +54,7 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 					if (request.challenge) {
 						// Process challenge
 						if (lastPlayAction != null && lastPlayAction.action().characterNeeded != null && !lastPlayAction.hasBeenChallenged()) {
-							currentPlayActions.set(currentPlayActions.size() - 1, new PlayAction(lastPlayAction.sender(), lastPlayAction.action(), lastPlayAction.target(), true));
+							setLastActionAlreadyChallenged();
 							addChallengeToHistory(player.getUuid(), lastPlayAction.sender());
 							if (processChallenge(lastPlayAction.sender(), player.getUuid(), lastPlayAction.action().characterNeeded)) {
 								waitingForPlayers.removeIf(playerUuid -> playerUuid != lastPlayAction.target());
@@ -65,7 +65,7 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 					} else if (request.accept) {
 						// Process accept
 						if (lastPlayAction != null && (lastPlayAction.action().characterNeeded != null || lastPlayAction.action() == Action.FOREIGN_AID)) {
-							waitingForPlayers.remove(player.getUuid());
+							processResponse(player.getUuid());
 						}
 					} else if (request.playAction != null) {
 						// Process action
@@ -202,19 +202,26 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 		if (switch (lastPlayAction.action()) {
 			case FOREIGN_AID -> playAction.action() == Action.BLOCK_FOREIGN_AID;
 			case ASSASSINATE -> playAction.sender().equals(lastPlayAction.target()) && playAction.action() == Action.BLOCK_ASSASSINATION;
-			case STEAL -> playAction.sender().equals(lastPlayAction.target()) && playAction.action() == Action.BLOCK_STEALING_CAPTAIN || playAction.action() == Action.BLOCK_STEALING_AMBASSADOR || playAction.action() == Action.BLOCK_STEALING_INQUISITOR;
+			case STEAL -> playAction.sender().equals(lastPlayAction.target()) && (playAction.action() == Action.BLOCK_STEALING_CAPTAIN || playAction.action() == Action.BLOCK_STEALING_AMBASSADOR || playAction.action() == Action.BLOCK_STEALING_INQUISITOR);
 			default -> false;
 		}) {
-			queuedPlayAction = playAction;
-			waitingForPlayers.remove(playAction.sender());
-			addPlayActionToHistory(playAction);
-			if (waitingForPlayers.isEmpty()) {
-				if (queuedPlayAction != null) {
-					currentPlayActions.add(queuedPlayAction);
-					queuedPlayAction = null;
-				}
-				prepareForChallenge();
+			if (queuedPlayAction == null) {
+				queuedPlayAction = playAction;
 			}
+			processResponse(playAction.sender());
+		}
+	}
+
+	private void processResponse(UUID playerUuid) {
+		waitingForPlayers.remove(playerUuid);
+		if (waitingForPlayers.isEmpty()) {
+			setLastActionAlreadyChallenged();
+			if (queuedPlayAction != null) {
+				currentPlayActions.add(queuedPlayAction);
+				addPlayActionToHistory(queuedPlayAction);
+				queuedPlayAction = null;
+			}
+			prepareForChallenge();
 		}
 	}
 
@@ -223,7 +230,11 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 		if (playAction != null) {
 			// If action requires a character, it can be challenged
 			if (!playAction.hasBeenChallenged() && (playAction.action().characterNeeded != null || playAction.action() == Action.FOREIGN_AID)) {
-				playerDetails.forEach(playerDetailsEntry -> waitingForPlayers.add(playerDetailsEntry.uuid()));
+				playerDetails.forEach(playerDetailsEntry -> {
+					if (!playerDetailsEntry.visibleCharacters().isEmpty()) {
+						waitingForPlayers.add(playerDetailsEntry.uuid());
+					}
+				});
 			}
 			waitingForPlayers.remove(playAction.sender());
 		}
@@ -285,6 +296,13 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 		}
 	}
 
+	private void setLastActionAlreadyChallenged() {
+		final PlayAction playAction = Utilities.getElement(currentPlayActions, -1);
+		if (playAction != null) {
+			currentPlayActions.set(currentPlayActions.size() - 1, new PlayAction(playAction.sender(), playAction.action(), playAction.target(), true));
+		}
+	}
+
 	private void queueElimination(UUID playerUuid) {
 		getAlivePlayerDetails(playerUuid, eliminatePlayerDetails -> {
 			final int existingCardCount = eliminatePlayerDetails.visibleCharacters().size();
@@ -307,7 +325,10 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 			getAlivePlayerDetails(playerUuid, eliminatePlayerDetails -> {
 				final List<Character> visibleCharacters = eliminatePlayerDetails.visibleCharacters();
 				if (new HashSet<>(visibleCharacters).containsAll(selectedCharacters)) {
-					selectedCharacters.forEach(visibleCharacters::remove);
+					selectedCharacters.forEach(character -> {
+						visibleCharacters.remove(character);
+						deck.add(character);
+					});
 					addEliminationToHistory(playerUuid, selectedCharacters);
 					eliminationQueue.remove(playerUuid);
 				}

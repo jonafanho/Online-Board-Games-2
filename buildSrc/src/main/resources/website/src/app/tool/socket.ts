@@ -20,7 +20,7 @@ export class Socket {
 
 			const getRoomUpdate = (roomCode: string) => requestRoom(roomCode);
 			const pathSplit = router.url.split("/");
-			const roomCode = pathSplit[pathSplit.length - 1];
+			const roomCode = pathSplit[pathSplit.length - 1].split("?")[0];
 
 			if (roomCode) {
 				if (client.connected) {

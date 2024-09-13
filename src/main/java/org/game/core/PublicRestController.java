@@ -6,6 +6,9 @@ import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Objects;
+import java.util.UUID;
+
 /**
  * A REST controller for public endpoints. Authentication is not required.
  */
@@ -29,11 +32,15 @@ public final class PublicRestController {
 	 */
 	@NonNull
 	@GetMapping("/register")
-	public Player.PlayerRegistration register(@RequestParam(value = "uuid", required = false) String uuidString, @RequestParam(value = "token", required = false) String tokenString) {
-		return Utilities.parseUuid(uuidString, tokenString, (uuid, token) -> {
-			final Player player = playerRepository.getPlayerByUuidAndToken(uuid, token).orElse(null);
-			return player == null ? createNewPlayerRegistration() : new Player.PlayerRegistration(player);
-		}, this::createNewPlayerRegistration);
+	public Player.PlayerRegistration register(@RequestParam(value = "uuid", required = false) String uuidString, @RequestParam(value = "token", required = false) String tokenString, @RequestParam(value = "debugIndex", required = false) Integer debugIndex) {
+		if (debugIndex != null) {
+			return new Player.PlayerRegistration(Objects.requireNonNullElseGet(playerRepository.getPlayerByToken(new UUID(0, debugIndex)).orElse(null), () -> playerRepository.save(new Player(debugIndex))));
+		} else {
+			return Utilities.parseUuid(uuidString, tokenString, (uuid, token) -> {
+				final Player player = playerRepository.getPlayerByUuidAndToken(uuid, token).orElse(null);
+				return player == null ? createNewPlayerRegistration() : new Player.PlayerRegistration(player);
+			}, this::createNewPlayerRegistration);
+		}
 	}
 
 	/**

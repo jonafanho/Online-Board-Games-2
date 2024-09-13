@@ -2,6 +2,10 @@
 	overflow: hidden;
 }
 
+.games-wrapper {
+	height: 100%;
+}
+
 .games {
 	overflow-y: auto;
 }

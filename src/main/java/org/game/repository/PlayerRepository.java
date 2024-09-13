@@ -10,5 +10,7 @@ import java.util.UUID;
 @Repository
 public interface PlayerRepository extends JpaRepository<Player, UUID> {
 
+	Optional<Player> getPlayerByToken(UUID token);
+
 	Optional<Player> getPlayerByUuidAndToken(UUID uuid, UUID token);
 }

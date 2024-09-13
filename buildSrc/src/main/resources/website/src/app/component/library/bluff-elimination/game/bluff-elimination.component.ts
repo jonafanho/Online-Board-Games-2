@@ -222,6 +222,12 @@ export class BluffEliminationComponent {
 							});
 						}
 					} else {
+						const addAcceptButton = () => this.actions.push({
+							title: "Accept",
+							disabled: false,
+							icon: "",
+							send: () => this.sendAccept(),
+						});
 						const addChallengeAcceptButtons = () => {
 							this.actions.push({
 								title: "Challenge",
@@ -229,12 +235,7 @@ export class BluffEliminationComponent {
 								icon: "",
 								send: () => this.sendChallenge(),
 							});
-							this.actions.push({
-								title: "Accept",
-								disabled: false,
-								icon: "",
-								send: () => this.sendAccept(),
-							});
+							addAcceptButton();
 						};
 
 						for (let i = historyEvents.length - 1; i >= 0; i--) {
@@ -248,7 +249,7 @@ export class BluffEliminationComponent {
 										characterName: BluffEliminationComponent.getCharacterName(Character.Duke),
 										send: () => this.sendAction(Action.BlockForeignAid),
 									});
-									addChallengeAcceptButtons();
+									addAcceptButton();
 									break;
 								case Event.ExchangeAmbassador:
 									if (lastEvent.sender == thisPlayer.uuid) {
@@ -274,39 +275,43 @@ export class BluffEliminationComponent {
 									addChallengeAcceptButtons();
 									break;
 								case Event.Assassinate:
-									this.actions.push({
-										title: "Block Assassination",
-										disabled: false,
-										icon: getIcon(Character.Contessa),
-										characterName: BluffEliminationComponent.getCharacterName(Character.Contessa),
-										send: () => this.sendAction(Action.BlockAssassination),
-									});
+									if (lastEvent.target == thisPlayer.uuid) {
+										this.actions.push({
+											title: "Block Assassination",
+											disabled: false,
+											icon: getIcon(Character.Contessa),
+											characterName: BluffEliminationComponent.getCharacterName(Character.Contessa),
+											send: () => this.sendAction(Action.BlockAssassination),
+										});
+									}
 									addChallengeAcceptButtons();
 									break;
 								case Event.Steal:
-									this.actions.push({
-										title: "Block Steal with Captain",
-										disabled: false,
-										icon: getIcon(Character.Captain),
-										characterName: BluffEliminationComponent.getCharacterName(Character.Captain),
-										send: () => this.sendAction(Action.BlockStealingCaptain),
-									});
-									if (state.characterSet == CharacterSet.WithAmbassador) {
+									if (lastEvent.target == thisPlayer.uuid) {
 										this.actions.push({
-											title: "Block Steal with Ambassador",
+											title: "Block Steal with Captain",
 											disabled: false,
-											icon: getIcon(Character.Ambassador),
-											characterName: BluffEliminationComponent.getCharacterName(Character.Ambassador),
-											send: () => this.sendAction(Action.BlockStealingAmbassador),
+											icon: getIcon(Character.Captain),
+											characterName: BluffEliminationComponent.getCharacterName(Character.Captain),
+											send: () => this.sendAction(Action.BlockStealingCaptain),
 										});
-									} else {
-										this.actions.push({
-											title: "Block Steal with Inquisitor",
-											disabled: false,
-											icon: getIcon(Character.Inquisitor),
-											characterName: BluffEliminationComponent.getCharacterName(Character.Inquisitor),
-											send: () => this.sendAction(Action.BlockStealingInquisitor),
-										});
+										if (state.characterSet == CharacterSet.WithAmbassador) {
+											this.actions.push({
+												title: "Block Steal with Ambassador",
+												disabled: false,
+												icon: getIcon(Character.Ambassador),
+												characterName: BluffEliminationComponent.getCharacterName(Character.Ambassador),
+												send: () => this.sendAction(Action.BlockStealingAmbassador),
+											});
+										} else {
+											this.actions.push({
+												title: "Block Steal with Inquisitor",
+												disabled: false,
+												icon: getIcon(Character.Inquisitor),
+												characterName: BluffEliminationComponent.getCharacterName(Character.Inquisitor),
+												send: () => this.sendAction(Action.BlockStealingInquisitor),
+											});
+										}
 									}
 									addChallengeAcceptButtons();
 									break;

@@ -19,7 +19,7 @@ public final class Player extends AbstractEntity {
 	private UUID uuid;
 
 	@Getter(AccessLevel.NONE)
-	private final UUID token = UUID.randomUUID();
+	private final UUID token;
 
 	@Setter
 	@Column(nullable = false)
@@ -32,6 +32,14 @@ public final class Player extends AbstractEntity {
 	@JsonIgnore
 	@ManyToMany(mappedBy = "players")
 	private final Set<Room> rooms = new HashSet<>();
+
+	public Player() {
+		token = UUID.randomUUID();
+	}
+
+	public Player(int debugIndex) {
+		token = new UUID(0, debugIndex);
+	}
 
 	public static class PlayerRegistration {
 

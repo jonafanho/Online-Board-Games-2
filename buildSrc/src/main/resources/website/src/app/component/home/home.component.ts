@@ -13,6 +13,7 @@ import {MatTooltipModule} from "@angular/material/tooltip";
 import {Game} from "../../entity/game";
 import {MatChipsModule} from "@angular/material/chips";
 import {DataService} from "../../service/data.service";
+import {JoinRoomFormComponent} from "../join-room-form/join-room-form.component";
 
 @Component({
 	selector: "app-home",
@@ -29,21 +30,15 @@ import {DataService} from "../../service/data.service";
 		MatProgressSpinnerModule,
 		MatTooltipModule,
 		MatChipsModule,
+		JoinRoomFormComponent,
 	],
 	templateUrl: "./home.component.html",
 	styleUrl: "./home.component.css",
 })
 export class HomeComponent {
-	protected roomCodeValue = "";
 	protected filteredGames = Game.GAMES;
-	protected joinRoomDisabled = true;
 
 	constructor(private readonly dataService: DataService, private readonly router: Router) {
-	}
-
-	textChanged(newValue: string) {
-		this.roomCodeValue = newValue.toUpperCase().replaceAll(/[^A-Z0-9]/g, "");
-		this.joinRoomDisabled = this.roomCodeValue.length < 6;
 	}
 
 	searchGames(searchText: string) {

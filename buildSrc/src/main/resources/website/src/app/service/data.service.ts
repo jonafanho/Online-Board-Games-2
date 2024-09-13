@@ -45,9 +45,19 @@ export class DataService {
 				}
 			});
 		} else {
-			this.httpClient.get<{ uuid: string, token: string }>(`${BASE_URL}/api/public/register?uuid=${this.cookieService.get(PLAYER_UUID_COOKIE)}&token=${this.cookieService.get(PLAYER_TOKEN_COOKIE)}`).subscribe(({uuid, token}) => {
-				this.cookieService.set(PLAYER_UUID_COOKIE, uuid, COOKIE_OPTIONS);
-				this.cookieService.set(PLAYER_TOKEN_COOKIE, token, COOKIE_OPTIONS);
+			const debugIndex = new URL(document.location.href).searchParams.get("debugIndex");
+			let url;
+			if (debugIndex) {
+				console.info("Registering player in debug mode");
+				url = `${BASE_URL}/api/public/register?debugIndex=${debugIndex}`;
+			} else {
+				url = `${BASE_URL}/api/public/register?uuid=${this.cookieService.get(PLAYER_UUID_COOKIE)}&token=${this.cookieService.get(PLAYER_TOKEN_COOKIE)}`;
+			}
+			this.httpClient.get<{ uuid: string, token: string }>(url).subscribe(({uuid, token}) => {
+				if (!debugIndex) {
+					this.cookieService.set(PLAYER_UUID_COOKIE, uuid, COOKIE_OPTIONS);
+					this.cookieService.set(PLAYER_TOKEN_COOKIE, token, COOKIE_OPTIONS);
+				}
 				this.token = token;
 				this.httpClient.get<Player>(`${BASE_URL}/api/public/getPlayer?playerUuid=${uuid}`).subscribe(player => {
 					this.updatePlayer(player);
