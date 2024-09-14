@@ -5,6 +5,7 @@
 .left-pane {
 	min-width: 355px;
 	max-width: 355px;
+	overflow-x: hidden;
 	overflow-y: auto;
 }
 
@@ -15,13 +16,13 @@
 
 @media (max-width: 720px) {
 	.left-pane {
-		min-width: 226px;
-		max-width: 226px;
+		min-width: 146px;
+		max-width: 146px;
 	}
 
 	.player-card {
-		min-width: 226px;
-		max-width: 226px;
+		min-width: 146px;
+		max-width: 146px;
 	}
 }
 
@@ -68,9 +69,16 @@
 .character.card {
 	align-content: center;
 	font-weight: bold;
+	overflow: hidden;
 	text-align: center;
 	width: 120px;
 	height: 40px;
+}
+
+@media (max-width: 720px) {
+	.character.card {
+		width: 40px;
+	}
 }
 
 .character:disabled {

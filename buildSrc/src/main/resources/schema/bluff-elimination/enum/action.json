@@ -45,6 +45,16 @@
 			"Character.INQUISITOR",
 			true
 		],
+		"Show": [
+			0,
+			null,
+			true
+		],
+		"ForceExchange": [
+			0,
+			null,
+			true
+		],
 		"BlockForeignAid": [
 			0,
 			"Character.DUKE",

@@ -29,11 +29,15 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 	private int currentPlayerTurnIndex;
 	private final List<PlayAction> currentPlayActions = new ArrayList<>();
 	private final Set<UUID> waitingForPlayers = new HashSet<>();
+	private final Map<UUID, Integer> returnQueue = new HashMap<>();
 	private final Map<UUID, Integer> eliminationQueue = new HashMap<>();
+	private final Map<UUID, UUID> peekQueue = new HashMap<>();
 	@Nullable
 	private PlayAction queuedPlayAction;
+	@Nullable
+	private Character queuedShowCharacter;
 
-	private final List<List<HistoryEvent>> history = new ArrayList<>();
+	private final GameHistory gameHistory = new GameHistory();
 
 	@Override
 	public void process(Player player, Room room, Request request) {
@@ -44,27 +48,39 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 				}
 				break;
 			case MAIN:
-				if (eliminationQueue.containsKey(player.getUuid())) {
+				if (returnQueue.containsKey(player.getUuid())) {
+					// Process return
+					if (request.selectCharacters != null && !request.selectCharacters.isEmpty()) {
+						processEliminationOrReturn(player.getUuid(), request.selectCharacters, returnQueue, false);
+					}
+				} else if (eliminationQueue.containsKey(player.getUuid())) {
 					// Process elimination
 					if (request.selectCharacters != null && !request.selectCharacters.isEmpty()) {
-						processElimination(player.getUuid(), request.selectCharacters);
+						processEliminationOrReturn(player.getUuid(), request.selectCharacters, eliminationQueue, true);
 					}
 				} else if (waitingForPlayers.contains(player.getUuid())) {
+					if (peekQueue.containsKey(player.getUuid())) {
+						// Process peek
+						if (request.selectCharacters != null && request.selectCharacters.size() == 1) {
+							processShow(peekQueue.get(player.getUuid()), player.getUuid(), request.selectCharacters.get(0));
+						}
+					}
+
 					final PlayAction lastPlayAction = Utilities.getElement(currentPlayActions, -1);
 					if (request.challenge) {
 						// Process challenge
 						if (lastPlayAction != null && lastPlayAction.action().characterNeeded != null && !lastPlayAction.hasBeenChallenged()) {
 							setLastActionAlreadyChallenged();
-							addChallengeToHistory(player.getUuid(), lastPlayAction.sender());
+							gameHistory.addChallengeToHistory(player.getUuid(), lastPlayAction.sender());
 							if (processChallenge(lastPlayAction.sender(), player.getUuid(), lastPlayAction.action().characterNeeded)) {
-								waitingForPlayers.removeIf(playerUuid -> playerUuid != lastPlayAction.target());
+								waitingForPlayers.removeIf(playerUuid -> !playerUuid.equals(lastPlayAction.target()));
 							} else {
 								waitingForPlayers.clear();
 							}
 						}
 					} else if (request.accept) {
 						// Process accept
-						if (lastPlayAction != null && (lastPlayAction.action().characterNeeded != null || lastPlayAction.action() == Action.FOREIGN_AID)) {
+						if (lastPlayAction != null && (lastPlayAction.action().characterNeeded != null || lastPlayAction.action() == Action.FOREIGN_AID || lastPlayAction.action() == Action.SHOW)) {
 							processResponse(player.getUuid());
 						}
 					} else if (request.playAction != null) {
@@ -85,7 +101,7 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 				if (waitingForPlayers.isEmpty()) {
 					processAccept();
 					// If no more pending tasks, move on to the next turn
-					if (currentPlayActions.isEmpty() && eliminationQueue.isEmpty()) {
+					if (currentPlayActions.isEmpty() && returnQueue.isEmpty() && eliminationQueue.isEmpty()) {
 						nextTurn();
 					}
 				}
@@ -97,9 +113,9 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 	@Override
 	public ClientState getStateForPlayer(Player player) {
 		final List<PlayerDetails> clientPlayerDetails = new ArrayList<>();
-		final Map<UUID, WaitingForPlayer> waitingForPlayersList = new HashMap<>();
+		final Map<UUID, WaitingForSelection> waitingForEliminationMap = new HashMap<>();
+		final Map<UUID, WaitingForSelection> waitingForReturnMap = new HashMap<>();
 		final List<TurnHistory> turnHistoryList = new ArrayList<>();
-		final boolean newRevealCharacterOnEliminated = revealCharacterOnEliminated || getStage() == Stage.END;
 
 		if (getStage() != Stage.LOBBY) {
 			playerDetails.forEach(playerDetailsEntry -> {
@@ -108,17 +124,32 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 				clientPlayerDetails.add(new PlayerDetails(uuid, playerDetailsEntry.coins(), isPlayer ? playerDetailsEntry.visibleCharacters() : new ArrayList<>(), isPlayer ? 0 : playerDetailsEntry.visibleCharacters().size()));
 			});
 
-			waitingForPlayers.forEach(playerUuid -> waitingForPlayersList.put(playerUuid, new WaitingForPlayer(playerUuid, 0)));
-			eliminationQueue.forEach((playerUuid, charactersToEliminate) -> waitingForPlayersList.put(playerUuid, new WaitingForPlayer(playerUuid, charactersToEliminate)));
+			eliminationQueue.forEach((playerUuid, charactersToEliminate) -> waitingForEliminationMap.put(playerUuid, new WaitingForSelection(playerUuid, charactersToEliminate)));
+			peekQueue.forEach((showingPlayerUuid, askingPlayerUuid) -> waitingForReturnMap.put(showingPlayerUuid, new WaitingForSelection(showingPlayerUuid, 1)));
+			returnQueue.forEach((playerUuid, charactersToReturn) -> waitingForReturnMap.put(playerUuid, new WaitingForSelection(playerUuid, charactersToReturn)));
 
-			history.forEach(historyEvents -> {
+			gameHistory.getHistory().forEach(historyEvents -> {
 				final List<HistoryEvent> newHistoryEvents = new ArrayList<>();
-				historyEvents.forEach(historyEvent -> newHistoryEvents.add(new HistoryEvent(historyEvent.sender(), historyEvent.event(), historyEvent.target(), newRevealCharacterOnEliminated ? historyEvent.visibleCharacters() : new ArrayList<>(), newRevealCharacterOnEliminated ? 0 : historyEvent.visibleCharacters().size())));
+				historyEvents.forEach(historyEvent -> {
+					final boolean isSender = player.getUuid().equals(historyEvent.sender());
+					final boolean isTarget = player.getUuid().equals(historyEvent.target());
+					final boolean showCharacters = getStage() == Stage.END || switch (historyEvent.event()) {
+						case SHOW -> isSender || isTarget;
+						case RETURN -> isSender;
+						case ELIMINATION -> revealCharacterOnEliminated || isSender;
+						default -> false;
+					};
+					newHistoryEvents.add(new HistoryEvent(historyEvent.sender(), historyEvent.event(), historyEvent.target(), showCharacters ? historyEvent.visibleCharacters() : new ArrayList<>(), showCharacters ? 0 : historyEvent.visibleCharacters().size()));
+				});
 				turnHistoryList.add(new TurnHistory(newHistoryEvents));
 			});
 		}
 
-		final ClientState clientState = new ClientState(characterSet, startingCardsPerPlayer, startingCoinsPerPlayer, enableTeams, newRevealCharacterOnEliminated, clientPlayerDetails, currentPlayerTurnIndex, currentPlayActions, new ArrayList<>(waitingForPlayersList.values()), turnHistoryList);
+		final ClientState clientState = new ClientState(
+				characterSet, startingCardsPerPlayer, startingCoinsPerPlayer, enableTeams, revealCharacterOnEliminated,
+				clientPlayerDetails, currentPlayerTurnIndex, currentPlayActions,
+				new ArrayList<>(waitingForPlayers), new ArrayList<>(waitingForEliminationMap.values()), new ArrayList<>(waitingForReturnMap.values()), turnHistoryList
+		);
 		clientState.setStage(getStage());
 		return clientState;
 	}
@@ -187,22 +218,28 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 
 	private void processInitialAction(PlayAction playAction) {
 		if (switch (playAction.action()) {
-			case INCOME, FOREIGN_AID, TAX, EXCHANGE_AMBASSADOR, EXCHANGE_INQUISITOR, PEEK -> true;
+			case INCOME, FOREIGN_AID, TAX, EXCHANGE_AMBASSADOR, EXCHANGE_INQUISITOR -> true;
 			case ELIMINATE, ASSASSINATE -> getAlivePlayerDetails(playAction.target(), targetPlayerDetails -> true);
 			case STEAL -> getAlivePlayerDetails(playAction.target(), targetPlayerDetails -> targetPlayerDetails.coins() >= playAction.action().cost);
+			case PEEK -> getAlivePlayerDetails(playAction.target(), targetPlayerDetails -> {
+				peekQueue.put(playAction.target(), playAction.sender());
+				return true;
+			});
 			default -> false;
 		}) {
 			currentPlayActions.add(playAction);
-			addPlayActionToHistory(playAction);
+			gameHistory.addPlayActionToHistory(playAction);
 			prepareForChallenge();
 		}
 	}
 
 	private void processSecondaryAction(PlayAction lastPlayAction, PlayAction playAction) {
+		final boolean senderWasTargeted = playAction.sender().equals(lastPlayAction.target());
 		if (switch (lastPlayAction.action()) {
 			case FOREIGN_AID -> playAction.action() == Action.BLOCK_FOREIGN_AID;
-			case ASSASSINATE -> playAction.sender().equals(lastPlayAction.target()) && playAction.action() == Action.BLOCK_ASSASSINATION;
-			case STEAL -> playAction.sender().equals(lastPlayAction.target()) && (playAction.action() == Action.BLOCK_STEALING_CAPTAIN || playAction.action() == Action.BLOCK_STEALING_AMBASSADOR || playAction.action() == Action.BLOCK_STEALING_INQUISITOR);
+			case ASSASSINATE -> senderWasTargeted && playAction.action() == Action.BLOCK_ASSASSINATION;
+			case STEAL -> senderWasTargeted && (playAction.action() == Action.BLOCK_STEALING_CAPTAIN || playAction.action() == Action.BLOCK_STEALING_AMBASSADOR || playAction.action() == Action.BLOCK_STEALING_INQUISITOR);
+			case SHOW -> senderWasTargeted && lastPlayAction.sender().equals(playAction.target()) && playAction.action() == Action.FORCE_EXCHANGE;
 			default -> false;
 		}) {
 			if (queuedPlayAction == null) {
@@ -218,23 +255,42 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 			setLastActionAlreadyChallenged();
 			if (queuedPlayAction != null) {
 				currentPlayActions.add(queuedPlayAction);
-				addPlayActionToHistory(queuedPlayAction);
+				if (queuedPlayAction.action() == Action.SHOW) {
+					gameHistory.addShowToHistory(queuedPlayAction.sender(), queuedPlayAction.target(), queuedShowCharacter);
+				} else {
+					gameHistory.addPlayActionToHistory(queuedPlayAction);
+				}
 				queuedPlayAction = null;
 			}
 			prepareForChallenge();
 		}
 	}
 
+	private void processForceExchange(UUID target) {
+		getAlivePlayerDetails(target, targetPlayerDetails -> {
+			if (queuedShowCharacter != null) {
+				targetPlayerDetails.visibleCharacters().remove(queuedShowCharacter);
+				deck.add(queuedShowCharacter);
+				targetPlayerDetails.visibleCharacters().add(deck.remove(0));
+			}
+			return false;
+		});
+	}
+
 	private void prepareForChallenge() {
 		final PlayAction playAction = Utilities.getElement(currentPlayActions, -1);
 		if (playAction != null) {
 			// If action requires a character, it can be challenged
-			if (!playAction.hasBeenChallenged() && (playAction.action().characterNeeded != null || playAction.action() == Action.FOREIGN_AID)) {
-				playerDetails.forEach(playerDetailsEntry -> {
-					if (!playerDetailsEntry.visibleCharacters().isEmpty()) {
-						waitingForPlayers.add(playerDetailsEntry.uuid());
-					}
-				});
+			if (!playAction.hasBeenChallenged() && (playAction.action().characterNeeded != null || playAction.action() == Action.FOREIGN_AID || playAction.action() == Action.SHOW)) {
+				if (playAction.action() == Action.SHOW) {
+					waitingForPlayers.add(playAction.target());
+				} else {
+					playerDetails.forEach(playerDetailsEntry -> {
+						if (!playerDetailsEntry.visibleCharacters().isEmpty()) {
+							waitingForPlayers.add(playerDetailsEntry.uuid());
+						}
+					});
+				}
 			}
 			waitingForPlayers.remove(playAction.sender());
 		}
@@ -282,8 +338,8 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 				case EXCHANGE_INQUISITOR:
 					exchangeCards(playAction.sender(), 1);
 					break;
-				case PEEK:
-					// TODO
+				case FORCE_EXCHANGE:
+					processForceExchange(playAction.target());
 					break;
 				case BLOCK_FOREIGN_AID:
 				case BLOCK_ASSASSINATION:
@@ -308,7 +364,7 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 			final int existingCardCount = eliminatePlayerDetails.visibleCharacters().size();
 			final int charactersToEliminate = Math.min(existingCardCount, eliminationQueue.getOrDefault(playerUuid, 0) + 1);
 			if (existingCardCount == charactersToEliminate) {
-				addEliminationToHistory(playerUuid, new ArrayList<>(eliminatePlayerDetails.visibleCharacters()));
+				gameHistory.addEliminationToHistory(playerUuid, new ArrayList<>(eliminatePlayerDetails.visibleCharacters()));
 				eliminatePlayerDetails.visibleCharacters().clear();
 				eliminationQueue.remove(playerUuid);
 				waitingForPlayers.remove(playerUuid);
@@ -319,8 +375,15 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 		});
 	}
 
-	private void processElimination(UUID playerUuid, List<Character> selectedCharacters) {
-		final int charactersToEliminate = eliminationQueue.get(playerUuid);
+	private void queueReturn(UUID playerUuid, int count) {
+		getAlivePlayerDetails(playerUuid, eliminatePlayerDetails -> {
+			returnQueue.put(playerUuid, count);
+			return false;
+		});
+	}
+
+	private void processEliminationOrReturn(UUID playerUuid, List<Character> selectedCharacters, Map<UUID, Integer> queue, boolean isElimination) {
+		final int charactersToEliminate = queue.get(playerUuid);
 		if (charactersToEliminate > 0 && charactersToEliminate == selectedCharacters.size()) {
 			getAlivePlayerDetails(playerUuid, eliminatePlayerDetails -> {
 				final List<Character> visibleCharacters = eliminatePlayerDetails.visibleCharacters();
@@ -329,12 +392,29 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 						visibleCharacters.remove(character);
 						deck.add(character);
 					});
-					addEliminationToHistory(playerUuid, selectedCharacters);
-					eliminationQueue.remove(playerUuid);
+
+					if (isElimination) {
+						gameHistory.addEliminationToHistory(playerUuid, selectedCharacters);
+					} else {
+						gameHistory.addReturnToHistory(playerUuid, selectedCharacters);
+					}
+
+					queue.remove(playerUuid);
+
+					if (peekQueue.containsKey(playerUuid) && visibleCharacters.size() == 1) {
+						processShow(peekQueue.get(playerUuid), playerUuid, visibleCharacters.get(0));
+					}
 				}
 				return false;
 			});
 		}
+	}
+
+	private void processShow(UUID askingPlayerUuid, UUID showingPlayerUuid, Character selectedCharacter) {
+		queuedPlayAction = new PlayAction(showingPlayerUuid, Action.SHOW, askingPlayerUuid, false);
+		queuedShowCharacter = selectedCharacter;
+		peekQueue.remove(showingPlayerUuid);
+		processResponse(showingPlayerUuid);
 	}
 
 	private void payForAction(UUID playerUuid, Action action, boolean negative) {
@@ -347,12 +427,12 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 		}
 	}
 
-	private void exchangeCards(UUID playerUuid, int cards) {
+	private void exchangeCards(UUID playerUuid, int count) {
 		getAlivePlayerDetails(playerUuid, exchangePlayerDetails -> {
-			for (int i = 0; i < cards; i++) {
+			for (int i = 0; i < count; i++) {
 				exchangePlayerDetails.visibleCharacters().add(deck.remove(0));
-				queueElimination(playerUuid);
 			}
+			queueReturn(playerUuid, count);
 			return false;
 		});
 	}
@@ -366,38 +446,9 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 		return false;
 	}
 
-	private void addChallengeToHistory(UUID sender, UUID target) {
-		addToHistory(new HistoryEvent(sender, Event.CHALLENGE, target, new ArrayList<>(), 0));
-	}
-
-	private void addEliminationToHistory(UUID sender, List<Character> characters) {
-		addToHistory(new HistoryEvent(sender, Event.ELIMINATION, null, characters, 0));
-	}
-
-	private void addPlayActionToHistory(PlayAction playAction) {
-		addToHistory(new HistoryEvent(playAction.sender(), switch (playAction.action()) {
-			case INCOME -> Event.INCOME;
-			case FOREIGN_AID -> Event.FOREIGN_AID;
-			case ELIMINATE -> Event.ELIMINATE;
-			case TAX -> Event.TAX;
-			case ASSASSINATE -> Event.ASSASSINATE;
-			case STEAL -> Event.STEAL;
-			case EXCHANGE_AMBASSADOR -> Event.EXCHANGE_AMBASSADOR;
-			case EXCHANGE_INQUISITOR -> Event.EXCHANGE_INQUISITOR;
-			case PEEK -> Event.PEEK;
-			case BLOCK_FOREIGN_AID -> Event.BLOCK_FOREIGN_AID;
-			case BLOCK_ASSASSINATION -> Event.BLOCK_ASSASSINATION;
-			case BLOCK_STEALING_CAPTAIN -> Event.BLOCK_STEALING_CAPTAIN;
-			case BLOCK_STEALING_AMBASSADOR -> Event.BLOCK_STEALING_AMBASSADOR;
-			case BLOCK_STEALING_INQUISITOR -> Event.BLOCK_STEALING_INQUISITOR;
-		}, playAction.target(), new ArrayList<>(), 0));
-	}
-
-	private void addToHistory(HistoryEvent historyEvent) {
-		Utilities.getElement(history, -1).add(historyEvent);
-	}
-
 	private void nextTurn() {
+		peekQueue.clear();
+		queuedShowCharacter = null;
 		// If no other players are alive, end the game
 		if (playerDetails.stream().filter(playerDetailsEntry -> !playerDetailsEntry.visibleCharacters().isEmpty()).count() == 1) {
 			setStage(Stage.END);
@@ -406,7 +457,7 @@ public final class GameState extends AbstractGameState<Stage, Request, ClientSta
 				currentPlayerTurnIndex = (currentPlayerTurnIndex + 1) % playerDetails.size();
 				if (!playerDetails.get(currentPlayerTurnIndex).visibleCharacters().isEmpty()) {
 					waitingForPlayers.add(playerDetails.get(currentPlayerTurnIndex).uuid());
-					history.add(new ArrayList<>());
+					gameHistory.getHistory().add(new ArrayList<>());
 					return;
 				}
 			}

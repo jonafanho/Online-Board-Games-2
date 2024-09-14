@@ -59,7 +59,10 @@ export class BluffEliminationComponent {
 			dataService.getRoom()?.players.map(player => playerMap[player.uuid] = {player, isAlive: false, coins: 0});
 
 			if (state && thisPlayer) {
-				const waitingUuidList = state.waitingForPlayers.map(waitingForPlayer => waitingForPlayer.uuid);
+				const waitingUuidList: string[] = [];
+				state.waitingForAction.forEach(uuid => waitingUuidList.push(uuid));
+				state.waitingForElimination.forEach(waitingForSelection => waitingUuidList.push(waitingForSelection.uuid));
+				state.waitingForReturn.forEach(waitingForSelection => waitingUuidList.push(waitingForSelection.uuid));
 
 				for (let i = 0; i < state.playerDetails.length; i++) {
 					const playerDetailsEntry = state.playerDetails[i];
@@ -109,6 +112,10 @@ export class BluffEliminationComponent {
 							return [`${sender} claimed`, "Inquisitor", "and attempted to exchange cards from the deck."];
 						case Event.Peek:
 							return [`${sender} claimed`, "Inquisitor", `and attempted to look at one of ${target}'s cards.`];
+						case Event.Show:
+							return [`${sender} showed ${historyEvent.visibleCharacters.length > 0 ? BluffEliminationComponent.getCharacterName(historyEvent.visibleCharacters[0]) : "a card"} to ${target}.`, "", ""];
+						case Event.ForceExchange:
+							return [`${sender} forced ${target} to exchange a card.`, "", ""];
 						case Event.BlockForeignAid:
 							return [`${sender} claimed`, "Duke", "and attempted to block the foreign aid."];
 						case Event.BlockAssassination:
@@ -123,35 +130,56 @@ export class BluffEliminationComponent {
 							return [`${sender} challenged ${target}.`, "", ""];
 						case Event.Elimination:
 							if (historyEvent.visibleCharacters.length == 0) {
-								return [`${sender} eliminated ${historyEvent.hiddenCharacters} character${historyEvent.hiddenCharacters > 1 ? "s" : ""}.`, "", ""];
+								return [`${sender} eliminated ${historyEvent.hiddenCharacters} card${historyEvent.hiddenCharacters > 1 ? "s" : ""}.`, "", ""];
 							} else {
 								return [`${sender} eliminated ${historyEvent.visibleCharacters.map(BluffEliminationComponent.getCharacterName).join(" and ")}.`, "", ""];
+							}
+						case Event.Return:
+							if (historyEvent.visibleCharacters.length == 0) {
+								return [`${sender} returned ${historyEvent.hiddenCharacters} card${historyEvent.hiddenCharacters > 1 ? "s" : ""} to the deck.`, "", ""];
+							} else {
+								return [`${sender} returned ${historyEvent.visibleCharacters.map(BluffEliminationComponent.getCharacterName).join(" and ")} to the deck.`, "", ""];
 							}
 					}
 				})));
 
 				this.isGameOver = state.stage == Stage.End;
 				this.isWaiting = waitingUuidList.includes(thisPlayer.uuid);
+				const thisWaitingForReturn = state.waitingForReturn.find(waitingDetails => waitingDetails.uuid == thisPlayer.uuid);
+				const thisWaitingForElimination = state.waitingForElimination.find(waitingDetails => waitingDetails.uuid == thisPlayer.uuid);
 				const thisPlayerDetails = state.playerDetails.find(playerDetailsEntry => playerDetailsEntry.uuid == thisPlayer.uuid);
 
 				if (this.isWaiting && thisPlayerDetails) {
 					const historyEvents = state.history[state.history.length - 1].historyEvents;
 					const getIcon = (character: Character) => thisPlayerDetails.visibleCharacters.includes(character) ? "check_mark" : "warning";
-					const getTargets = (condition: (playerDetails: { player: Player, isAlive: boolean, coins: number }) => boolean) => Object.values(playerMap).filter(playerDetails => condition(playerDetails) && thisPlayer.uuid != playerDetails.player.uuid).map(playerDetails => ({playerName: playerDetails.player.formattedName, uuid: playerDetails.player.uuid}));
+					const getTargets = (condition: (playerDetails: { player: Player, isAlive: boolean, coins: number }) => boolean) => Object.values(playerMap).filter(playerDetails => playerDetails.isAlive && condition(playerDetails) && thisPlayer.uuid != playerDetails.player.uuid).map(playerDetails => ({playerName: playerDetails.player.formattedName, uuid: playerDetails.player.uuid}));
 					BluffEliminationComponent.sortCards(thisPlayerDetails.visibleCharacters);
-					const writeCheckBoxes = (title: string) => {
-						thisPlayerDetails.visibleCharacters.forEach(character => this.checkBoxDetails.push({
-							characterName: BluffEliminationComponent.getCharacterName(character),
-							click: checked => {
-								if (checked) {
-									this.selectedCharacters.push(character);
-								} else {
-									this.selectedCharacters.splice(this.selectedCharacters.indexOf(character), 1);
-								}
-							},
-						}));
-						this.checkBoxButtonDetails.title = title;
-						this.checkBoxButtonDetails.disabled = () => state.waitingForPlayers.find(waitingForPlayer => waitingForPlayer.eliminate)?.eliminate !== this.selectedCharacters.length;
+					const writeCheckBoxes = (title: string, count: number) => {
+						if (thisPlayerDetails.visibleCharacters.length == count) {
+							this.actions.push({
+								title: `${title} ${thisPlayerDetails.visibleCharacters.map(character => BluffEliminationComponent.getCharacterName(character)).join(" and ")}`,
+								disabled: false,
+								icon: "",
+								send: () => {
+									this.selectedCharacters.length = 0;
+									thisPlayerDetails.visibleCharacters.forEach(character => this.selectedCharacters.push(character));
+									this.sendSelectCharacters();
+								},
+							});
+						} else {
+							thisPlayerDetails.visibleCharacters.forEach(character => this.checkBoxDetails.push({
+								characterName: BluffEliminationComponent.getCharacterName(character),
+								click: checked => {
+									if (checked) {
+										this.selectedCharacters.push(character);
+									} else {
+										this.selectedCharacters.splice(this.selectedCharacters.indexOf(character), 1);
+									}
+								},
+							}));
+							this.checkBoxButtonDetails.title = `${title} Selected`;
+							this.checkBoxButtonDetails.disabled = () => count !== this.selectedCharacters.length;
+						}
 					};
 
 					if (historyEvents.length == 0) {
@@ -170,7 +198,7 @@ export class BluffEliminationComponent {
 						this.actions.push({
 							title: "Eliminate",
 							disabled: thisPlayerDetails.coins < 7,
-							targets: getTargets(playerDetails => playerDetails.isAlive),
+							targets: getTargets(() => true),
 							icon: "",
 							send: target => this.sendAction(Action.Eliminate, target),
 						});
@@ -184,7 +212,7 @@ export class BluffEliminationComponent {
 						this.actions.push({
 							title: "Assassinate",
 							disabled: thisPlayerDetails.coins < 3,
-							targets: getTargets(playerDetails => playerDetails.isAlive),
+							targets: getTargets(() => true),
 							icon: getIcon(Character.Assassin),
 							characterName: BluffEliminationComponent.getCharacterName(Character.Assassin),
 							send: target => this.sendAction(Action.Assassinate, target),
@@ -216,12 +244,25 @@ export class BluffEliminationComponent {
 							this.actions.push({
 								title: "Peek",
 								disabled: false,
+								targets: getTargets(() => true),
 								icon: getIcon(Character.Inquisitor),
 								characterName: BluffEliminationComponent.getCharacterName(Character.Inquisitor),
-								send: () => this.sendAction(Action.Peek),
+								send: target => this.sendAction(Action.Peek, target),
 							});
 						}
 					} else {
+						const addChallengeButton = () => {
+							const event1 = historyEvents[historyEvents.length - 1]?.event;
+							const event2 = historyEvents[historyEvents.length - 2]?.event;
+							if (!(event1 === Event.Elimination && event2 === Event.Challenge || event1 == Event.Challenge)) {
+								this.actions.push({
+									title: "Challenge",
+									disabled: false,
+									icon: "",
+									send: () => this.sendChallenge(),
+								});
+							}
+						};
 						const addAcceptButton = () => this.actions.push({
 							title: "Accept",
 							disabled: false,
@@ -229,12 +270,7 @@ export class BluffEliminationComponent {
 							send: () => this.sendAccept(),
 						});
 						const addChallengeAcceptButtons = () => {
-							this.actions.push({
-								title: "Challenge",
-								disabled: false,
-								icon: "",
-								send: () => this.sendChallenge(),
-							});
+							addChallengeButton();
 							addAcceptButton();
 						};
 
@@ -252,21 +288,20 @@ export class BluffEliminationComponent {
 									addAcceptButton();
 									break;
 								case Event.ExchangeAmbassador:
-									if (lastEvent.sender == thisPlayer.uuid) {
-										writeCheckBoxes("Discard Selected");
+									if (thisWaitingForReturn) {
+										writeCheckBoxes("Discard", thisWaitingForReturn.selection);
 									} else {
 										addChallengeAcceptButtons();
 									}
 									break;
 								case Event.ExchangeInquisitor:
-									if (lastEvent.sender == thisPlayer.uuid) {
-										writeCheckBoxes("Discard Selected");
+									if (thisWaitingForReturn) {
+										writeCheckBoxes("Discard", thisWaitingForReturn.selection);
 									} else {
 										addChallengeAcceptButtons();
 									}
 									break;
 								case Event.Tax:
-								case Event.Peek:
 								case Event.BlockForeignAid:
 								case Event.BlockAssassination:
 								case Event.BlockStealingCaptain:
@@ -315,8 +350,30 @@ export class BluffEliminationComponent {
 									}
 									addChallengeAcceptButtons();
 									break;
+								case Event.Peek:
+									if (thisWaitingForReturn) {
+										writeCheckBoxes("Show", thisWaitingForReturn.selection);
+										addChallengeButton();
+									} else {
+										addChallengeAcceptButtons();
+									}
+									break;
+								case Event.Show:
+									this.actions.push({
+										title: "Force Exchange",
+										disabled: false,
+										icon: "",
+										send: () => this.sendAction(Action.ForceExchange, lastEvent.sender),
+									});
+									addAcceptButton();
+									break;
 								case Event.Challenge:
-									writeCheckBoxes("Eliminate Selected");
+									if (thisWaitingForElimination) {
+										writeCheckBoxes("Eliminate", thisWaitingForElimination.selection);
+									}
+									break;
+								case Event.Elimination:
+									i--;
 									break;
 							}
 
@@ -327,12 +384,6 @@ export class BluffEliminationComponent {
 					}
 				} else {
 					this.selectedCharacters.length = 0;
-					this.actions.push({
-						title: "Tell others to hurry up",
-						disabled: false,
-						icon: "schedule",
-						send: () => console.log("no"),
-					});
 				}
 			}
 		};

@@ -9,13 +9,16 @@
 		"ExchangeAmbassador": [],
 		"ExchangeInquisitor": [],
 		"Peek": [],
+		"Show": [],
+		"ForceExchange": [],
 		"BlockForeignAid": [],
 		"BlockAssassination": [],
 		"BlockStealingCaptain": [],
 		"BlockStealingAmbassador": [],
 		"BlockStealingInquisitor": [],
 		"Challenge": [],
-		"Elimination": []
+		"Elimination": [],
+		"Return": []
 	},
 	"fields": {
 	}

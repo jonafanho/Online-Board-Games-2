@@ -2,7 +2,7 @@
 	"uuid": {
 		"type": "uuid"
 	},
-	"eliminate": {
+	"selection": {
 		"type": "integer"
 	}
 }

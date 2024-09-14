@@ -25,9 +25,17 @@
 		"array": true,
 		"type": "PlayAction"
 	},
-	"waitingForPlayers": {
+	"waitingForAction": {
 		"array": true,
-		"type": "waitingForPlayer"
+		"type": "uuid"
+	},
+	"waitingForElimination": {
+		"array": true,
+		"type": "waitingForSelection"
+	},
+	"waitingForReturn": {
+		"array": true,
+		"type": "waitingForSelection"
 	},
 	"history": {
 		"array": true,

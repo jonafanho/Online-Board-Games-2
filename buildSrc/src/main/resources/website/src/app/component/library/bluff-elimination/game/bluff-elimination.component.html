@@ -45,7 +45,7 @@
 				</div>
 			</div>
 		</div>
-		@if (!isGameOver) {
+		@if (!isGameOver && (checkBoxDetails.length > 0 || actions.length > 0)) {
 			<div class="column gap box actions">
 				<h2>Actions</h2>
 				@if (checkBoxDetails.length > 0) {
